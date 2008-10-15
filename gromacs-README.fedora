@@ -1,0 +1,19 @@
+Oct 12 2008
+Jussi Lehtola
+
+
+Some notes about the GROMACS Fedora package:
+
+- In order to prevent name clashes with other software, all 
+binaries have been renamed to start with g_ . For instance
+grompp is now g_grompp and mdrun is now g_mdrun.
+
+- All binaries are available in single and dual precision.
+The binaries with the _d suffix are double precision versions.
+For instance g_mdrun is single precision and g_mdrun_d is double
+precision.
+
+- MPI enabled binaries are in gromacs-mpi. These contain, too,
+both single and double precision versions. Single precision
+versions have _mpi suffix, double precisin versions _mpi_d suffix.
+For instance g_mdrun_mpi and g_mdrun_mpi_d.

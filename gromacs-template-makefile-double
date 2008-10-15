@@ -1,0 +1,13 @@
+LIBS         = -lmd_d -lgmx_d -lnsl -lfftw3f -lm  -lXm -lXt  -lSM -lICE -lXext -lXp -lX11   
+LDFLAGS      =
+CFLAGS       = -O3 -g -pipe -fexceptions -m64 -Wall     -I/usr/include/gromacs  
+CC           = gcc
+LD           = $(CC)
+
+# The real make targets - note that most make programs support
+# the shortcut $^ instead of listing all object files a second
+# time, but we cannot count on it...
+
+template:       template.o
+                $(LD) $(LDFLAGS) -o $@ template.o $(LIBS)
+
