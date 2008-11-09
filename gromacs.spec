@@ -1,6 +1,6 @@
 Name:		gromacs
-Version:	4.0
-Release:	3%{?dist}
+Version:	4.0.1
+Release:	4%{?dist}
 Summary:	GROMACS binaries
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -24,6 +24,10 @@ BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	openmpi-devel
+
+
+# Need to have this so that yum doesn't pull atlas instead
+Requires:	lapack
 
 %if 0%{?rhel} == 4
 BuildRequires:	blas
@@ -79,6 +83,8 @@ mdrun has been renamed to g_mdrun.
 Summary:	GROMACS libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
+# Need to have this so that yum doesn't pull atlas instead
+Requires:	lapack
 
 %description libs
 GROMACS is a versatile and extremely well optimized package
@@ -96,6 +102,8 @@ single and double precision binaries.
 Summary:	GROMACS MPI binaries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
+# Need to have this so that yum doesn't pull atlas instead
+Requires:	lapack
 
 %description mpi
 GROMACS is a versatile and extremely well optimized package
@@ -150,6 +158,8 @@ Summary:	GROMACS MPI development libraries
 Group:		Applications/Engineering
 Requires:	gromacs-mpi-libs = %{version}-%{release}
 Requires:	gromacs-devel =  %{version}-%{release}
+# Need to have this so that yum doesn't install LAM instead
+Requires:	openmpi
 
 %description mpi-devel
 GROMACS is a versatile and extremely well optimized package
@@ -167,6 +177,10 @@ You need it if you want to write your own analysis programs.
 Summary:	GROMACS libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
+# Need to have this so that yum doesn't install LAM instead
+Requires:	openmpi
+# Need to have this so that yum doesn't pull atlas instead
+Requires:	lapack
 
 %description mpi-libs
 GROMACS is a versatile and extremely well optimized package
@@ -259,7 +273,7 @@ chmod a-x src/tools/gmx_xpm2ps.c
 # because of incompatibilies with Microsoft Assembler.
 # Add noexecstack to compiler flags
 
-export CFLAGS="%optflags -Wa,--noexecstack"
+export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
 export LIBS="-lblas -llapack"
 
 # Single precision
@@ -520,6 +534,11 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Nov 09 2008 Jussi Lehtola - 4.0.1-4
+- Update to 4.0.1.
+- Add Requires: lapack and openmpi to prevent yum from pulling atlas and lam
+instead.
+
 * Wed Oct 15 2008 Jussi Lehtola - 4.0-3
 - Rename also man pages.
 
