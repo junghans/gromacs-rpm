@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.1
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	GROMACS binaries
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -27,6 +27,7 @@ BuildRequires:	openmpi-devel
 
 
 # Need to have this so that yum doesn't pull atlas instead
+Requires:	blas
 Requires:	lapack
 
 %if 0%{?rhel} == 4
@@ -84,6 +85,7 @@ Summary:	GROMACS libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 # Need to have this so that yum doesn't pull atlas instead
+Requires:	blas
 Requires:	lapack
 
 %description libs
@@ -103,6 +105,7 @@ Summary:	GROMACS MPI binaries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 # Need to have this so that yum doesn't pull atlas instead
+Requires:	blas
 Requires:	lapack
 
 %description mpi
@@ -180,6 +183,7 @@ Requires:	gromacs-common = %{version}-%{release}
 # Need to have this so that yum doesn't install LAM instead
 Requires:	openmpi
 # Need to have this so that yum doesn't pull atlas instead
+Requires:	blas
 Requires:	lapack
 
 %description mpi-libs
@@ -534,6 +538,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Nov 09 2008 Jussi Lehtola - 4.0.1-5
+- Add Requires: blas too.
+
 * Sun Nov 09 2008 Jussi Lehtola - 4.0.1-4
 - Update to 4.0.1.
 - Add Requires: lapack and openmpi to prevent yum from pulling atlas and lam
