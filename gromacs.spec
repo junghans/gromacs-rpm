@@ -1,13 +1,12 @@
 Name:		gromacs
 Version:	4.0.2
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	GROMACS binaries
 Group:		Applications/Engineering
 License:	GPLv2+
 URL:		http://www.gromacs.org
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
-#Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
-Source1:	ftp://ftp.gromacs.org/pub/beta/gromacs-4.0.pdf
+Source1:	ftp://ftp.gromacs.org/pub/manual/manual-4.0.pdf
 Source2:	gromacs-template-makefile-single
 Source3:	gromacs-template-makefile-double
 Source4:	gromacs-template-makefile-mpi-single
@@ -24,11 +23,6 @@ BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	openmpi-devel
-
-
-# Need to have this so that yum doesn't pull atlas instead
-Requires:	blas
-Requires:	lapack
 
 %if 0%{?rhel} == 4
 BuildRequires:	blas
@@ -488,7 +482,7 @@ rm -rf %{buildroot}
 
 %files common
 %defattr(-,root,root,-)
-%doc AUTHORS COPYING README gromacs-4.0.pdf README.fedora
+%doc AUTHORS COPYING README manual-4.0.pdf README.fedora
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
 %{_mandir}/man1/*
@@ -538,56 +532,60 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Mon Nov 10 2008 Jussi Lehtola - 4.0.2-6
+* Wed Jan 14 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.2-7
+- Update manual to latest version.
+- Removed Requires: blas and lapack.
+
+* Mon Nov 10 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.2-6
 - Update to 4.0.2.
 
-* Sun Nov 09 2008 Jussi Lehtola - 4.0.1-5
+* Sun Nov 09 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.1-5
 - Add Requires: blas too.
 
-* Sun Nov 09 2008 Jussi Lehtola - 4.0.1-4
+* Sun Nov 09 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.1-4
 - Update to 4.0.1.
 - Add Requires: lapack and openmpi to prevent yum from pulling atlas and lam
 instead.
 
-* Wed Oct 15 2008 Jussi Lehtola - 4.0-3
+* Wed Oct 15 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-3
 - Rename also man pages.
 
-* Mon Oct 13 2008 Jussi Lehtola - 4.0-2
+* Mon Oct 13 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-2
 - Added noreplace to bash completion file.
 - Changed double precision mpi binary suffix to _mpi_d.
 
-* Sun Oct 12 2008 Jussi Lehtola - 4.0-1
+* Sun Oct 12 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-1
 - Update to Gromacs 4.0.
 - Remove module system and patch file names to begin with g_.
 
-* Wed Oct 08 2008 Jussi Lehtola - 4.0-0.15.rc3
+* Wed Oct 08 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.15.rc3
 - Changed location of binaries.
 - Removed conflict of module file, as the program is binary compatible with older versions.
 
-* Wed Oct 08 2008 Jussi Lehtola - 4.0-0.14.rc3
+* Wed Oct 08 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.14.rc3
 - The gromacs module is loaded automatically and it conflicts with gromacs3.
 
-* Tue Oct 07 2008 Jussi Lehtola - 4.0-0.13.rc3
+* Tue Oct 07 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.13.rc3
 - Renamed module files from %%{name}-%%{version} to %%{name}.
 
-* Mon Oct 06 2008 Jussi Lehtola - 4.0-0.12.rc3
+* Mon Oct 06 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.12.rc3
 - Fix BR to get GROMACS to build in mock for epel-4.
 
-* Sat Oct 04 2008 Jussi Lehtola - 4.0-0.11.rc3
+* Sat Oct 04 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.11.rc3
 - Fix to get GROMACS to build in mock for epel-5.
 
-* Sat Oct 04 2008 Jussi Lehtola - 4.0-0.10.rc3
+* Sat Oct 04 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.10.rc3
 - Implement module system & remove binary renaming.
 - No need for autoreconf anymore.
 - Update to rc3.
 
-* Sat Oct 04 2008 Jussi Lehtola - 4.0-0.9.rc2
+* Sat Oct 04 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.9.rc2
 - Fall back to autoreconf due to binary renaming.
 
-* Fri Oct 03 2008 Jussi Lehtola - 4.0-0.8.rc2
+* Fri Oct 03 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.8.rc2
 - Modified install commands to preserve timestamps.
 
-* Fri Oct 03 2008 Jussi Lehtola - 4.0-0.7.rc2
+* Fri Oct 03 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.7.rc2
 - Even more review fixes.
 - Binaries renamed:
 	highway	->	g_highway
@@ -595,31 +593,31 @@ instead.
 	sigeps	->	g_sigeps
 	wheel	->	g_wheel
 
-* Thu Oct 02 2008 Jussi Lehtola - 4.0-0.6.rc2
+* Thu Oct 02 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.6.rc2
 - Final review fixes.
 
-* Wed Oct 01 2008 Jussi Lehtola - 4.0-0.5.rc2
+* Wed Oct 01 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.5.rc2
 - Strip down requires by branching tutor to its own package.
 
-* Tue Sep 30 2008 Jussi Lehtola - 4.0-0.4.rc2
+* Tue Sep 30 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.4.rc2
 - Extensive package review fixes.
 - Unclear licenses on some files, filed upstream bug 217.
   http://bugzilla.gromacs.org/show_bug.cgi?id=217
 
-* Mon Sep 29 2008 Jussi Lehtola - 4.0-0.3.rc2
+* Mon Sep 29 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.3.rc2
 - Move .so files to -devel package.
 - Remove .la files.
 
-* Mon Sep 29 2008 Jussi Lehtola - 4.0-0.2.rc2
+* Mon Sep 29 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.2.rc2
 - Implement out-of-tree-builds.
 - Add --noexecstack to CFLAGS.
 - Remove execstack procedure and prelink from buildreqs.
 - Filed upstream bug 215 to add .note.GNU-stack .
 - Fix incorrect file permission on src/tools/gmx_xpm2ps.c .
 
-* Mon Sep 29 2008 Jussi Lehtola - 4.0-0.1.rc2
+* Mon Sep 29 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.1.rc2
 - Alphabetized buildrequires.
 - Changed gromacs-share to gromacs-common.
 
-* Fri Sep 26 2008 Jussi Lehtola - 4.0-0.0.rc2
+* Fri Sep 26 2008 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0-0.0.rc2
 - Initial build.
