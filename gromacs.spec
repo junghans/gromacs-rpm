@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.3
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	GROMACS - Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -549,6 +549,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-4
+- Retry fixing gmxdemo.
+
 * Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-3
 - Fixed gmxdemo.
 
