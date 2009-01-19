@@ -1,7 +1,7 @@
 Name:		gromacs
 Version:	4.0.3
-Release:	2%{?dist}
-Summary:	GROMACS binaries
+Release:	3%{?dist}
+Summary:	GROMACS - Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -15,6 +15,8 @@ Source6:	gromacs-README.fedora
 
 # Add shebangs to scripts
 Patch0:		gromacs-GMXRC.patch
+# Patch gmxdemo for new filenames
+Patch1:		gromacs-gmxdemo.patch
 
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	gromacs-common  = %{version}-%{release}
@@ -260,6 +262,7 @@ This package provides tutorials for the use of GROMACS.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 
 # Fix incorrect permission
 chmod a-x src/tools/gmx_xpm2ps.c
@@ -546,6 +549,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-3
+- Fixed gmxdemo.
+
 * Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-2
 - Fix EPEL 4 build.
 

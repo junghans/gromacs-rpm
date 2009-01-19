@@ -1,0 +1,111 @@
+diff -up gromacs-4.0.3/share/tutor/gmxdemo/demo.orig gromacs-4.0.3/share/tutor/gmxdemo/demo
+--- gromacs-4.0.3/share/tutor/gmxdemo/demo.orig	2006-02-15 23:48:34.000000000 +0200
++++ gromacs-4.0.3/share/tutor/gmxdemo/demo	2009-01-19 16:52:35.000000000 +0200
+@@ -80,9 +80,9 @@ set  ans = $<
+ 
+ echo "Starting pdb2gmx"
+ if ( $?DISPLAY ) then 
+-	xterm -title pdb2gmx -sb -e tail +0f output.pdb2gmx &
++	xterm -title g_pdb2gmx -sb -e tail +0f output.pdb2gmx &
+ endif
+-echo 0 | pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& ! output.pdb2gmx
++echo 0 | g_pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& ! output.pdb2gmx
+ echo "pdb2gmx finished"
+ echo -n "Press <enter>"
+ set  ans = $<
+@@ -119,11 +119,11 @@ set  ans = $<
+ 
+ echo "Starting editconf and genbox..."
+ if ( $?DISPLAY ) then 
+-	xterm -title genbox -sb -e tail +0f output.genbox &
++	xterm -title g_genbox -sb -e tail +0f output.genbox &
+ endif
+-editconf -f ${MOL}.gro -o ${MOL}.gro -d 0.5 >& ! output.genbox 
++g_editconf -f ${MOL}.gro -o ${MOL}.gro -d 0.5 >& ! output.genbox 
+ 
+-genbox -cp ${MOL}.gro -cs -o ${MOL}_b4em.gro -p ${MOL}.top >>& ! output.genbox 
++g_genbox -cp ${MOL}.gro -cs -o ${MOL}_b4em.gro -p ${MOL}.top >>& ! output.genbox 
+ 
+ echo "editconf and genbox finished"
+ echo -n "Press <enter>"
+@@ -189,9 +189,9 @@ _EOF_
+ 
+ echo "Starting grompp..."
+ if ( $?DISPLAY ) then 
+-	xterm -title grompp -sb -e tail +0f output.grompp_em &
++	xterm -title g_grompp -sb -e tail +0f output.grompp_em &
+ endif
+-grompp -f em -c ${MOL}_b4em -p ${MOL} -o ${MOL}_em >& ! output.grompp_em
++g_grompp -f em -c ${MOL}_b4em -p ${MOL} -o ${MOL}_em >& ! output.grompp_em
+ 
+ echo "grompp finished"
+ echo -n "Press <enter>"
+@@ -230,9 +230,9 @@ set  ans = $<
+ echo "starting energy minimisation mdrun..."
+ 
+ if ( $?DISPLAY ) then 
+-	xterm -title mdrun -sb -e tail +0f output.mdrun_em &
++	xterm -title g_mdrun -sb -e tail +0f output.mdrun_em &
+ endif
+-mdrun -nice 4 -s ${MOL}_em -o ${MOL}_em -c ${MOL}_b4pr -v >& ! output.mdrun_em 
++g_mdrun -nice 4 -s ${MOL}_em -o ${MOL}_em -c ${MOL}_b4pr -v >& ! output.mdrun_em 
+ 
+ echo "mdrun finished"
+ echo -n "Press <enter>"
+@@ -316,9 +316,9 @@ _EOF_
+ 
+ echo "Starting grompp..."
+ if ( $?DISPLAY ) then 
+-	xterm -title grompp -sb -e tail +0f output.grompp_pr &
++	xterm -title g_grompp -sb -e tail +0f output.grompp_pr &
+ endif
+-grompp -f pr -c ${MOL}_b4pr -r ${MOL}_b4pr -p ${MOL} -o ${MOL}_pr >& ! output.grompp_pr
++g_grompp -f pr -c ${MOL}_b4pr -r ${MOL}_b4pr -p ${MOL} -o ${MOL}_pr >& ! output.grompp_pr
+ echo "grompp finished"
+ 
+ echo -n "Press <enter>"
+@@ -350,9 +350,9 @@ set  ans = $<
+ 
+ echo "starting mdrun..."
+ if ( $?DISPLAY ) then 
+-	xterm -title mdrun -sb -e tail +0f output.mdrun_pr &
++	xterm -title g_mdrun -sb -e tail +0f output.mdrun_pr &
+ endif
+-mdrun -nice 4 -s ${MOL}_pr -o ${MOL}_pr -c ${MOL}_b4md -v >& ! output.mdrun_pr
++g_mdrun -nice 4 -s ${MOL}_pr -o ${MOL}_pr -c ${MOL}_b4md -v >& ! output.mdrun_pr
+ 
+ echo "mdrun finished"
+ echo -n "Press <enter>"
+@@ -417,9 +417,9 @@ _EOF_
+ 
+ echo "Starting grompp..."
+ if ( $?DISPLAY ) then 
+-	xterm -title grompp -sb -e tail +0f output.grompp_md &
++	xterm -title g_grompp -sb -e tail +0f output.grompp_md &
+ endif
+-grompp -f md -c ${MOL}_b4md  -p ${MOL} -o ${MOL}_md >& ! output.grompp_md
++g_grompp -f md -c ${MOL}_b4md  -p ${MOL} -o ${MOL}_md >& ! output.grompp_md
+ 
+ echo "grompp finished"
+ echo -n "Press <enter>"
+@@ -449,9 +449,9 @@ set  ans = $<
+ 
+ echo "starting mdrun..."
+ if ( $?DISPLAY ) then 
+-	xterm -title mdrun -sb -e tail +0f output.mdrun_md &
++	xterm -title g_mdrun -sb -e tail +0f output.mdrun_md &
+ endif
+-mdrun -nice 4 -s ${MOL}_md -o ${MOL}_md -c ${MOL}_after_md -v >& ! output.mdrun_md
++g_mdrun -nice 4 -s ${MOL}_md -o ${MOL}_md -c ${MOL}_after_md -v >& ! output.mdrun_md
+ 
+ echo "mdrun finished"
+ echo -n "Press <enter>"
+@@ -493,7 +493,7 @@ _EOF_
+ 
+ if ( $?DISPLAY ) then
+ 	echo Starting Trajectory viewer...
+-	ngmx -f ${MOL}_md -s ${MOL}_md  &
++	g_ngmx -f ${MOL}_md -s ${MOL}_md  &
+ endif
+ #last line 
+ 
