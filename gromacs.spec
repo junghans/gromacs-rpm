@@ -1,6 +1,6 @@
 Name:		gromacs
-Version:	4.0.2
-Release:	7%{?dist}
+Version:	4.0.3
+Release:	1%{?dist}
 Summary:	GROMACS binaries
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -532,6 +532,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-1
+- Update to 4.0.3.
+
 * Wed Jan 14 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.2-7
 - Update manual to latest version.
 - Removed Requires: blas and lapack.
