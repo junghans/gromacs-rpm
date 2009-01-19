@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	GROMACS binaries
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -354,6 +354,20 @@ cd ..
 %install
 rm -rf %{buildroot}
 
+# 4.0.3 needs this to build in EPEL-4
+# Load MPI enviroment
+%if %modules == 1
+. /etc/profile.d/modules.sh
+module load %{_libdir}/openmpi/*/openmpi.module
+%endif
+
+%if %selector == 1
+# Set MPI environment
+mpi-selector --set `mpi-selector --list | grep openmpi`
+source /etc/profile.d/mpi-selector.sh
+%endif
+
+
 # Single precision
 cd single
 make DESTDIR=%{buildroot} INSTALL="install -p" install
@@ -532,6 +546,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-2
+- Fix EPEL 4 build.
+
 * Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-1
 - Update to 4.0.3.
 
