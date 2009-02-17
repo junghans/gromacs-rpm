@@ -1,6 +1,6 @@
 Name:		gromacs
-Version:	4.0.3
-Release:	4%{?dist}
+Version:	4.0.4
+Release:	1%{?dist}
 Summary:	GROMACS - Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -80,9 +80,6 @@ mdrun has been renamed to g_mdrun.
 Summary:	GROMACS libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
-# Need to have this so that yum doesn't pull atlas instead
-Requires:	blas
-Requires:	lapack
 
 %description libs
 GROMACS is a versatile and extremely well optimized package
@@ -100,9 +97,6 @@ single and double precision binaries.
 Summary:	GROMACS MPI binaries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
-# Need to have this so that yum doesn't pull atlas instead
-Requires:	blas
-Requires:	lapack
 
 %description mpi
 GROMACS is a versatile and extremely well optimized package
@@ -178,9 +172,6 @@ Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 # Need to have this so that yum doesn't install LAM instead
 Requires:	openmpi
-# Need to have this so that yum doesn't pull atlas instead
-Requires:	blas
-Requires:	lapack
 
 %description mpi-libs
 GROMACS is a versatile and extremely well optimized package
@@ -549,6 +540,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Feb 17 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.4-1
+- Update to 4.0.4.
+
 * Mon Jan 19 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.3-4
 - Retry fixing gmxdemo.
 
