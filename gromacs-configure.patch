@@ -1,0 +1,17 @@
+diff -up gromacs-4.0.5/configure.orig gromacs-4.0.5/configure
+--- gromacs-4.0.5/configure.orig	2009-05-22 11:59:34.000000000 +0300
++++ gromacs-4.0.5/configure	2009-05-22 12:00:14.000000000 +0300
+@@ -31508,12 +31508,7 @@ AS="$CC"
+ # However, the non-suffixed names are linked to the _mpi and/or _d suffixed
+ # ones upon installation if that is the only version available.
+ 
+-if test "$enable_mpi" = "yes"; then
+-  LIBSUFFIX="_mpi"
+-fi
+-if test "$enable_float" = "no"; then
+-  LIBSUFFIX="${LIBSUFFIX}_d"
+-fi
++LIBSUFFIX="@LIBSUFFIX@"
+ 
+ 
+ # Unless the user has explicitly requested a prefix/suffix/transform, we

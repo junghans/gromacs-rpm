@@ -1,4 +1,4 @@
-Oct 12 2008
+Fri May 22 2009
 Jussi Lehtola
 
 
@@ -17,3 +17,8 @@ precision.
 both single and double precision versions. Single precision
 versions have _mpi suffix, double precisin versions _mpi_d suffix.
 For instance g_mdrun_mpi and g_mdrun_mpi_d.
+
+- Debug versions are available of all libraries and binaries with the
+_debug suffix. For instance the debug version of g_mdrun_mpi_d is
+g_mdrun_mpi_d_debug. The debug versions have been compiled without assembly
+loops, so they are much slower than the normal versions.
