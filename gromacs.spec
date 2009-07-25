@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -762,6 +762,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Jul 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.0.5-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
 * Fri May 22 2009 Jussi Lehtola <jussi.lehtola@iki.fi> - 4.0.5-1
 - Update to 4.0.5.
 - Change spec %%defines to %%globals.
