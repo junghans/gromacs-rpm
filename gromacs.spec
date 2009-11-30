@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.5
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -21,47 +21,15 @@ Patch1:		gromacs-gmxdemo.patch
 # Patch configure for the library suffix
 Patch2:		gromacs-configure.patch
 
-Requires:	gromacs-common = %{version}-%{release}
-
+BuildRequires:	blas-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
-BuildRequires:	libxml2-devel
-BuildRequires:	openmpi-devel
-
-%if 0%{?rhel} == 4
-BuildRequires:	blas
-BuildRequires:	lapack
-BuildRequires:	xorg-x11-devel
-%else
-BuildRequires:	blas-devel
 BuildRequires:	lapack-devel
+BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
-%endif
 
-# Check for mpi-selector or environment-modules
 
-%global selector 0
-%global modules 0
-
-%if 0%{?fedora} > 9
-%global modules 1
-%endif
-
-%if 0%{?rhel} == 4
-%global selector 1
-%endif
-
-%if 0%{?rhel} == 5
-%global selector 1
-%endif
-
-%if %modules == 1
-BuildRequires:	environment-modules
-%endif
-
-%if %selector == 1
-BuildRequires:	mpi-selector
-%endif
+Requires:	gromacs-common = %{version}-%{release}
 
 
 %description
@@ -78,95 +46,12 @@ N.B. All binaries have names starting with g_, for example mdrun has been
 renamed to g_mdrun.
 
 
-%package debug
-Summary:	GROMACS debugging binaries without assembly loops
-Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-
-%description debug
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides debugging versions of single and
-double precision binaries, compiled without assembly loops.
-The documentation is in the package gromacs-common.
-You do not want this package for production purposes.
-
-N.B. All binaries have names starting with g_, for example mdrun has been
-renamed to g_mdrun.
-
-
-%package libs
-Summary:	GROMACS libraries
-Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-
-%description libs
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides runtime libraries needed for the single and double
-precision binaries.
-
-
-%package debug-libs
-Summary:	GROMACS libraries without assembly loops for debugging
-Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-
-%description debug-libs
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides runtime libraries needed for the debugging versions of
-the single and double precision binaries.
-
-
-
-%package mpi
-Summary:	GROMACS MPI binaries
-Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-
-%description mpi
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides MPI single precision and double precision binaries.
-
-
-%package debug-mpi
-Summary:	GROMACS debugging MPI binaries without assembly loops
-Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-
-%description debug-mpi
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides debugging versions of MPI single precision and double
-precision binaries.
-
-
-
 %package common
 Summary:	GROMACS shared data and documentation
 Group:		Applications/Engineering
+BuildArch:	noarch
+# Due to switch to noarch package
+Obsoletes:	gromacs-common < %{version}-%{release}
 
 %description common
 GROMACS is a versatile and extremely well optimized package to perform
@@ -181,8 +66,7 @@ This package includes architecture independent data and documentation.
 %package devel
 Summary:	GROMACS header files and development libraries
 Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-Requires:	gromacs-libs = %{version}-%{release}
+Requires:	gromacs = %{version}-%{release}
 
 %description devel
 GROMACS is a versatile and extremely well optimized package to perform
@@ -196,104 +80,88 @@ molecular dynamics software. You need it if you want to write your own analysis
 programs.
 
 
-
-%package debug-devel
-Summary:	GROMACS debugging header files and development libraries
+%package openmpi
+Summary:	GROMACS Open MPI binaries and libraries
 Group:		Applications/Engineering
+Obsoletes:	gromacs-mpi < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
-Requires:	gromacs-devel = %{version}-%{release}
-Requires:	gromacs-debug-libs = %{version}-%{release}
-
-%description debug-devel
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package contains header files and development libraries for the debugging
-version of the GROMACS molecular dynamics software.
-
-
-
-%package mpi-devel
-Summary:	GROMACS MPI development libraries
-Group:		Applications/Engineering
-Requires:	gromacs-mpi-libs = %{version}-%{release}
-Requires:	gromacs-devel = %{version}-%{release}
-# Need to have this so that yum doesn't install LAM instead
+BuildRequires:	openmpi-devel
 Requires:	openmpi
 
-%description mpi-devel
+%description openmpi
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
 It is developed for biomolecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
-This package contains development libraries for GROMACS MPI.
+This package provides Open MPI single precision and double precision binaries
+and libraries.
+
+
+%package openmpi-devel
+Summary:	GROMACS Open MPI development libraries
+Group:		Applications/Engineering
+Obsoletes:	gromacs-mpi-devel < %{version}-%{release}
+Requires:	gromacs-devel = %{version}-%{release}
+Requires:	openmpi-devel
+
+
+%description openmpi-devel
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package contains development libraries for GROMACS Open MPI.
 You need it if you want to write your own analysis programs.
 
 
-%package debug-mpi-devel
-Summary:	GROMACS debugging MPI development libraries
-Group:		Applications/Engineering
-Requires:	gromacs-debug-mpi-libs = %{version}-%{release}
-Requires:	gromacs-debug-devel = %{version}-%{release}
-# Need to have this so that yum doesn't install LAM instead
-Requires:	openmpi
-
-%description debug-mpi-devel
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package contains debugging versions of development libraries for the MPI
-version of GROMACS.
+#%package mpich2
+#Summary:	GROMACS MPICH2 binaries and libraries
+#Group:		Applications/Engineering
+#Requires:	gromacs-common = %{version}-%{release}
+#Requires:	mpich2
+#
+#%description mpich2
+#GROMACS is a versatile and extremely well optimized package to perform
+#molecular dynamics computer simulations and subsequent trajectory analysis.
+#It is developed for biomolecules like proteins, but the extremely high
+#performance means it is used also in several other field like polymer chemistry
+#and solid state physics.
+#
+#This package provides MPICH2 single precision and double precision binaries
+#and libraries.
 
 
-%package mpi-libs
-Summary:	GROMACS MPI libraries
-Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-# Need to have this so that yum doesn't install LAM instead
-Requires:	openmpi
+#%package mpich2-devel
+#Summary:	GROMACS MPICH2 development libraries
+#Group:		Applications/Engineering
+#Requires:	gromacs-devel = %{version}-%{release}
+#BuildRequires:	mpich2-devel
+#Requires:	mpich2-devel
+#
+#%description mpich2-devel
+#GROMACS is a versatile and extremely well optimized package to perform
+#molecular dynamics computer simulations and subsequent trajectory analysis.
+#It is developed for biomolecules like proteins, but the extremely high
+#performance means it is used also in several other field like polymer chemistry
+#and solid state physics.
+#
+#This package contains development libraries for GROMACS MPICH2.
+#You need it if you want to write your own analysis programs.
 
-%description mpi-libs
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides runtime libraries needed for the MPI single and double
-precision binaries.
-
-
-%package debug-mpi-libs
-Summary:	GROMACS debugging MPI libraries
-Group:		Applications/Engineering
-Requires:	gromacs-common = %{version}-%{release}
-# Need to have this so that yum doesn't install LAM instead
-Requires:	openmpi
-
-%description debug-mpi-libs
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides debugging versions of runtime libraries needed for the
-debug versions of the MPI single and double precision binaries.
 
 
 %package bash
 Summary:	GROMACS bash completion
 Group:		Applications/Engineering
 Requires:	bash-completion
+BuildArch:	noarch
+# Due to switch to noarch package
+Obsoletes:	gromacs-common < %{version}-%{release}
+
 
 %description bash
 GROMACS is a versatile and extremely well optimized package to perform
@@ -309,6 +177,10 @@ This package provides bash completion for GROMACS.
 Summary:	GROMACS zsh support
 Group:		Applications/Engineering
 Requires:	zsh
+BuildArch:	noarch
+# Due to switch to noarch package
+Obsoletes:	gromacs-common < %{version}-%{release}
+
 
 %description zsh
 GROMACS is a versatile and extremely well optimized package to perform
@@ -325,6 +197,10 @@ completion.
 Summary:	GROMACS csh support
 Group:		Applications/Engineering
 Requires:	csh
+BuildArch:	noarch
+# Due to switch to noarch package
+Obsoletes:	gromacs-common < %{version}-%{release}
+
 
 %description csh
 GROMACS is a versatile and extremely well optimized package to perform
@@ -340,6 +216,9 @@ script.
 Summary:	GROMACS tutorial files
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
+BuildArch:	noarch
+# Due to switch to noarch package
+Obsoletes:	gromacs-common < %{version}-%{release}
 
 %description tutor
 GROMACS is a versatile and extremely well optimized package to perform
@@ -375,6 +254,8 @@ export DEFOPTS="--enable-shared --disable-static --with-external-blas \
 export SINGLE="--enable-float" # Single precision
 export DOUBLE="--disable-float" # Double precision
 export MPI="--enable-mpi"
+
+# Add this to the configure options if you want to build a debug version
 export NOASM="--disable-ia32-3dnow --disable-ia32-sse --disable-x86-64-sse \
 	--disable-ppc-altivec --disable-ia64-asm"
 
@@ -390,19 +271,6 @@ sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
 cd ..
 
-# Single precision, debug version with no assembly loops
-mkdir single-debug
-cd single-debug
-sed "s|@LIBSUFFIX@|_debug|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $SINGLE $NOASM --program-suffix="_debug"
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-
-make %{?_smp_mflags}
-cd ..
-
-
-
 # Double precision
 mkdir double
 cd double
@@ -414,140 +282,98 @@ sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
 cd ..
 
-# Double precision, debug version with no assembly loops
-mkdir double-debug
-cd double-debug
-sed "s|@LIBSUFFIX@|_d_debug|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $DOUBLE $NOASM --program-suffix="_d_debug"
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 
-make %{?_smp_mflags}
-cd ..
+### MPI versions
+export CC=mpicc
+export CXX=mpicxx
+export F77=mpif77
+export F90=mpif90
+export FC=mpif90
 
-
-
-# Load MPI enviroment
-
-%if %modules == 1
-. /etc/profile.d/modules.sh
-module load %{_libdir}/openmpi/*/openmpi.module
-# The module overrides CFLAGS, need to set them again..
-export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
-%endif
-
-%if %selector == 1
-# Set MPI environment
-mpi-selector --set `mpi-selector --list | grep openmpi`
-source /etc/profile.d/mpi-selector.sh
-%endif
-
-
-# MPI, single precision
-
-mkdir mpi-single
-cd mpi-single
+## Open MPI
+%{_openmpi_load}
+# single precision
+mkdir openmpi-single
+cd openmpi-single
 sed "s|@LIBSUFFIX@|_mpi|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $SINGLE $MPI --program-suffix="_mpi"
+%configure $DEFOPTS $SINGLE $MPI --program-suffix=${MPI_SUFFIX} --bindir=${MPI_BIN} --libdir=${MPI_LIB}
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-
 make %{?_smp_mflags} mdrun
-#make %{?_smp_mflags}
 cd ..
-
-mkdir mpi-single-debug
-cd mpi-single-debug
-sed "s|@LIBSUFFIX@|_mpi_debug|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $SINGLE $MPI $NOASM --program-suffix="_mpi_debug"
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-
-make %{?_smp_mflags} mdrun
-#make %{?_smp_mflags}
-cd ..
-
-
-
-# MPI, double precision
-mkdir mpi-double
-cd mpi-double
+# double precision
+mkdir openmpi-double
+cd openmpi-double
 sed "s|@LIBSUFFIX@|_mpi_d|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $DOUBLE $MPI --program-suffix="_mpi_d"
+%configure $DEFOPTS $DOUBLE $MPI --program-suffix=${MPI_SUFFIX}_d --bindir=${MPI_BIN} --libdir=${MPI_LIB}
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-
 make %{?_smp_mflags} mdrun
-#make %{?_smp_mflags}
 cd ..
+# unload
+%{_openmpi_unload}
 
-mkdir mpi-double-debug
-cd mpi-double-debug
-sed "s|@LIBSUFFIX@|_mpi_d_debug|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $DOUBLE $MPI $NOASM --program-suffix="_mpi_d_debug"
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-
-make %{?_smp_mflags} mdrun
-#make %{?_smp_mflags}
-cd ..
+## MPICH2
+#{_mpich2_load}
+# single precision
+#mkdir mpich2-single
+#cd mpich2-single
+#sed "s|@LIBSUFFIX@|_mpi|g" < ../configure > configure; chmod 777 configure
+#configure $DEFOPTS $SINGLE $MPI --program-suffix=${MPI_SUFFIX} --bindir=${MPI_BIN} --libdir=${MPI_LIB}
+#sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+#sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+#make %{?_smp_mflags} mdrun
+#cd ..
+# double precision
+#mkdir mpich2-double
+#cd mpich2-double
+#sed "s|@LIBSUFFIX@|_mpi_d|g" < ../configure > configure; chmod 777 configure
+#configure $DEFOPTS $DOUBLE $MPI --program-suffix=${MPI_SUFFIX}_d --bindir=${MPI_BIN} --libdir=${MPI_LIB}
+#sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+#sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+#make %{?_smp_mflags} mdrun
+#cd ..
+#{_mpich2_unload}
 
 
 %install
 rm -rf %{buildroot}
 
-# 4.0.3 needs this to build in EPEL-4
-# Load MPI enviroment
-%if %modules == 1
-. /etc/profile.d/modules.sh
-module load %{_libdir}/openmpi/*/openmpi.module
-export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
-%endif
 
-%if %selector == 1
-# Set MPI environment
-mpi-selector --set `mpi-selector --list | grep openmpi`
-source /etc/profile.d/mpi-selector.sh
-%endif
+## Open MPI
+%{_openmpi_load}
+# single precision
+cd openmpi-single
+make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+cd ..
+# double precision
+cd openmpi-double
+make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+cd ..
+%{_openmpi_unload}
 
+## MPICH 2
+#{_mpich2_load}
+# single precision
+#cd mpich2-single
+#make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+#cd ..
+# double precision
+#cd mpich2-double
+#make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+#cd ..
+#{_mpich2_unload}
+
+
+## Serial versions
 
 # Single precision
 cd single
 make DESTDIR=%{buildroot} INSTALL="install -p" install
 cd ..
-
-cd single-debug
-make DESTDIR=%{buildroot} INSTALL="install -p" install
-cd ..
-
 # Double precision
 cd double
 make DESTDIR=%{buildroot} INSTALL="install -p" install
-cd ..
-
-cd double-debug
-make DESTDIR=%{buildroot} INSTALL="install -p" install
-cd ..
-
-
-
-# MPI, single precision
-cd mpi-single
-make DESTDIR=%{buildroot} INSTALL="install -p" install-mdrun
-cd ..
-
-cd mpi-single-debug
-make DESTDIR=%{buildroot} INSTALL="install -p" install-mdrun
-cd ..
-
-
-# MPI, double precision
-cd mpi-double
-make DESTDIR=%{buildroot} INSTALL="install -p" install-mdrun
-cd ..
-
-cd mpi-double-debug
-make DESTDIR=%{buildroot} INSTALL="install -p" install-mdrun
 cd ..
 
 
@@ -571,9 +397,7 @@ chmod a+x %{buildroot}%{_bindir}/GMXRC %{buildroot}%{_bindir}/GMXRC.*
 # (This is done here so that we don't need to mess with machine generated makefiles.
 for bin in anadock do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp highway luck make_edi make_ndx mdrun mk_angndx ngmx pdb2gmx protonate sigeps tpbconv trjcat trjconv trjorder wheel x2top xpm2ps xrama ; do 
 mv %{buildroot}%{_bindir}/${bin} %{buildroot}%{_bindir}/g_${bin}
-mv %{buildroot}%{_bindir}/${bin}_debug %{buildroot}%{_bindir}/g_${bin}_debug
 mv %{buildroot}%{_bindir}/${bin}_d %{buildroot}%{_bindir}/g_${bin}_d
-mv %{buildroot}%{_bindir}/${bin}_d_debug %{buildroot}%{_bindir}/g_${bin}_d_debug
 done
 
 for bin in demux.pl xplor2gmx.pl; do
@@ -582,11 +406,11 @@ done
 
 # MPI-enabled binaries (list will continue when the makefile has
 # the possibility to compile all mpi-enabled files
-for mpibin in mdrun; do
-mv %{buildroot}%{_bindir}/${mpibin}_mpi %{buildroot}%{_bindir}/g_${mpibin}_mpi
-mv %{buildroot}%{_bindir}/${mpibin}_mpi_debug %{buildroot}%{_bindir}/g_${mpibin}_mpi_debug
-mv %{buildroot}%{_bindir}/${mpibin}_mpi_d %{buildroot}%{_bindir}/g_${mpibin}_mpi_d
-mv %{buildroot}%{_bindir}/${mpibin}_mpi_d_debug %{buildroot}%{_bindir}/g_${mpibin}_mpi_d_debug
+for mpi in openmpi mpich2; do
+ for mpibin in mdrun; do
+  mv %{buildroot}%{_libdir}/$mpi/bin/${mpibin}_${mpi} %{buildroot}%{_libdir}/$mpi/bin/g_${mpibin}_${mpi}
+  mv %{buildroot}%{_libdir}/$mpi/bin/${mpibin}_${mpi}_d %{buildroot}%{_libdir}/$mpi/bin/g_${mpibin}_${mpi}_d
+ done
 done
 
 # Man pages
@@ -607,32 +431,15 @@ mv %{buildroot}%{_bindir}/completion.bash %{buildroot}/etc/bash_completion.d/gro
 mv %{buildroot}%{_bindir}/completion.csh . 
 
 # Remove .la files
-rm -rf %{buildroot}/%{_libdir}/*.la
+find %{buildroot} -name *.la -exec rm -rf {} \;
 
-# Post install for libs
+# Post install for libs. MPI packages don't need this.
+%post -p /sbin/ldconfig
 
-%post libs -p /sbin/ldconfig
-
-%postun libs -p /sbin/ldconfig
-
-%post debug-libs -p /sbin/ldconfig
-
-%postun debug-libs -p /sbin/ldconfig
-
-%post mpi-libs -p /sbin/ldconfig
-
-%postun mpi-libs -p /sbin/ldconfig
-
-%post debug-mpi-libs -p /sbin/ldconfig
-
-%postun debug-mpi-libs -p /sbin/ldconfig
-
-
+%postun -p /sbin/ldconfig
 
 %clean
 rm -rf %{buildroot}
-
-
 
 
 # Files section
@@ -640,59 +447,12 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %{_bindir}/*
-%exclude %{_bindir}/*_debug
-%exclude %{_bindir}/g_mdrun_mpi*
-%exclude %{_bindir}/GMXRC*
-
-%files debug
-%defattr(-,root,root,-)
-%{_bindir}/*_debug
-%exclude %{_bindir}/g_mdrun_mpi_debug
-%exclude %{_bindir}/g_mdrun_mpi_d_debug
-
-%files libs
-%defattr(-,root,root,-)
 %{_libdir}/libgmx.so.*
 %{_libdir}/libgmx_d.so.*
 %{_libdir}/libgmxana.so.*
 %{_libdir}/libgmxana_d.so.*
 %{_libdir}/libmd.so.*
 %{_libdir}/libmd_d.so.*
-
-%files debug-libs
-%defattr(-,root,root,-)
-%{_libdir}/libgmx_debug.so.*
-%{_libdir}/libgmx_d_debug.so.*
-%{_libdir}/libgmxana_debug.so.*
-%{_libdir}/libgmxana_d_debug.so.*
-%{_libdir}/libmd_debug.so.*
-%{_libdir}/libmd_d_debug.so.*
-
-
-%files mpi
-%defattr(-,root,root,-)
-%{_bindir}/g_mdrun_mpi
-%{_bindir}/g_mdrun_mpi_d
-
-%files debug-mpi
-%defattr(-,root,root,-)
-%{_bindir}/g_mdrun_mpi_debug
-%{_bindir}/g_mdrun_mpi_d_debug
-
-%files mpi-libs
-%defattr(-,root,root,-)
-%{_libdir}/libgmx_mpi.so.*
-%{_libdir}/libgmx_mpi_d.so.*
-%{_libdir}/libmd_mpi.so.*
-%{_libdir}/libmd_mpi_d.so.*
-
-%files debug-mpi-libs
-%defattr(-,root,root,-)
-%{_libdir}/libgmx_mpi_debug.so.*
-%{_libdir}/libgmx_mpi_d_debug.so.*
-%{_libdir}/libmd_mpi_debug.so.*
-%{_libdir}/libmd_mpi_d_debug.so.*
-
 
 %files common
 %defattr(-,root,root,-)
@@ -716,30 +476,23 @@ rm -rf %{buildroot}
 %{_datadir}/%{name}/template
 %exclude %{_datadir}/%{name}/template/Makefile.mpi.*
 
-%files debug-devel
+%files openmpi
 %defattr(-,root,root,-)
-%{_libdir}/libgmx_debug.so
-%{_libdir}/libgmx_d_debug.so
-%{_libdir}/libgmxana_debug.so
-%{_libdir}/libgmxana_d_debug.so
-%{_libdir}/libmd_debug.so
-%{_libdir}/libmd_d_debug.so
+%{_libdir}/openmpi/bin/g_mdrun*
+%{_libdir}/openmpi/lib/lib*.so.*
 
-%files mpi-devel
+%files openmpi-devel
 %defattr(-,root,root,-)
-%{_libdir}/libgmx_mpi.so
-%{_libdir}/libgmx_mpi_d.so
-%{_libdir}/libmd_mpi.so
-%{_libdir}/libmd_mpi_d.so
-%{_datadir}/%{name}/template/Makefile.mpi.*
+%{_libdir}/openmpi/lib/lib*.so
 
-%files debug-mpi-devel
-%defattr(-,root,root,-)
-%{_libdir}/libgmx_mpi_debug.so
-%{_libdir}/libgmx_mpi_d_debug.so
-%{_libdir}/libmd_mpi_debug.so
-%{_libdir}/libmd_mpi_d_debug.so
+#%files mpich2
+#%defattr(-,root,root,-)
+#%{_libdir}/mpich2/bin/g_mdrun*
+#%{_libdir}/mpich2/lib/lib*.so.*
 
+#%files mpich2-devel
+#%defattr(-,root,root,-)
+#%{_libdir}/mpich2/lib/lib*.so
 
 %files zsh
 %defattr(-,root,root,-)
@@ -749,7 +502,6 @@ rm -rf %{buildroot}
 %files bash
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/bash_completion.d/gromacs
-
 
 %files csh
 %defattr(-,root,root,-)
@@ -762,6 +514,12 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Nov 30 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-3
+- Combine libs with binaries and drop debug packages to avoid explosion of
+  number of packages.
+- Adopt use of MPI guidelines. MPICH2 support still missing due to broken
+  mpich2 package.
+
 * Fri Jul 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.0.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
 
