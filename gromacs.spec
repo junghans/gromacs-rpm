@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -161,7 +161,7 @@ Group:		Applications/Engineering
 Requires:	bash-completion
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-common < %{version}-%{release}
+Obsoletes:	gromacs-bash < %{version}-%{release}
 
 
 %description bash
@@ -180,7 +180,7 @@ Group:		Applications/Engineering
 Requires:	zsh
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-common < %{version}-%{release}
+Obsoletes:	gromacs-zsh < %{version}-%{release}
 
 
 %description zsh
@@ -200,7 +200,7 @@ Group:		Applications/Engineering
 Requires:	csh
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-common < %{version}-%{release}
+Obsoletes:	gromacs-csh < %{version}-%{release}
 
 
 %description csh
@@ -219,7 +219,7 @@ Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-common < %{version}-%{release}
+Obsoletes:	gromacs-tutor < %{version}-%{release}
 
 %description tutor
 GROMACS is a versatile and extremely well optimized package to perform
@@ -515,6 +515,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Dec 01 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-4
+- Fix obsoletes.
+
 * Mon Nov 30 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-3
 - Combine libs with binaries and drop debug packages to avoid explosion of
   number of packages.
