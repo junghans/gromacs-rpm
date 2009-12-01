@@ -118,39 +118,39 @@ This package contains development libraries for GROMACS Open MPI.
 You need it if you want to write your own analysis programs.
 
 
-#%package mpich2
-#Summary:	GROMACS MPICH2 binaries and libraries
-#Group:		Applications/Engineering
-#Requires:	gromacs-common = %{version}-%{release}
-#Requires:	mpich2
-#
-#%description mpich2
-#GROMACS is a versatile and extremely well optimized package to perform
-#molecular dynamics computer simulations and subsequent trajectory analysis.
-#It is developed for biomolecules like proteins, but the extremely high
-#performance means it is used also in several other field like polymer chemistry
-#and solid state physics.
-#
-#This package provides MPICH2 single precision and double precision binaries
-#and libraries.
+%package mpich2
+Summary:	GROMACS MPICH2 binaries and libraries
+Group:		Applications/Engineering
+Requires:	gromacs-common = %{version}-%{release}
+Requires:	mpich2
+
+%description mpich2
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package provides MPICH2 single precision and double precision binaries
+and libraries.
 
 
-#%package mpich2-devel
-#Summary:	GROMACS MPICH2 development libraries
-#Group:		Applications/Engineering
-#Requires:	gromacs-devel = %{version}-%{release}
-#BuildRequires:	mpich2-devel
-#Requires:	mpich2-devel
-#
-#%description mpich2-devel
-#GROMACS is a versatile and extremely well optimized package to perform
-#molecular dynamics computer simulations and subsequent trajectory analysis.
-#It is developed for biomolecules like proteins, but the extremely high
-#performance means it is used also in several other field like polymer chemistry
-#and solid state physics.
-#
-#This package contains development libraries for GROMACS MPICH2.
-#You need it if you want to write your own analysis programs.
+%package mpich2-devel
+Summary:	GROMACS MPICH2 development libraries
+Group:		Applications/Engineering
+Requires:	gromacs-devel = %{version}-%{release}
+BuildRequires:	mpich2-devel
+Requires:	mpich2-devel
+
+%description mpich2-devel
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package contains development libraries for GROMACS MPICH2.
+You need it if you want to write your own analysis programs.
 
 
 
@@ -314,26 +314,26 @@ cd ..
 %{_openmpi_unload}
 
 ## MPICH2
-#{_mpich2_load}
+%{_mpich2_load}
 # single precision
-#mkdir mpich2-single
-#cd mpich2-single
-#sed "s|@LIBSUFFIX@|_mpi|g" < ../configure > configure; chmod 777 configure
-#configure $DEFOPTS $SINGLE $MPI --program-suffix=${MPI_SUFFIX} --bindir=${MPI_BIN} --libdir=${MPI_LIB}
-#sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-#sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-#make %{?_smp_mflags} mdrun
-#cd ..
+mkdir mpich2-single
+cd mpich2-single
+sed "s|@LIBSUFFIX@|_mpi|g" < ../configure > configure; chmod 777 configure
+%configure $DEFOPTS $SINGLE $MPI --program-suffix=${MPI_SUFFIX} --bindir=${MPI_BIN} --libdir=${MPI_LIB}
+sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+make %{?_smp_mflags} mdrun
+cd ..
 # double precision
-#mkdir mpich2-double
-#cd mpich2-double
-#sed "s|@LIBSUFFIX@|_mpi_d|g" < ../configure > configure; chmod 777 configure
-#configure $DEFOPTS $DOUBLE $MPI --program-suffix=${MPI_SUFFIX}_d --bindir=${MPI_BIN} --libdir=${MPI_LIB}
-#sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-#sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-#make %{?_smp_mflags} mdrun
-#cd ..
-#{_mpich2_unload}
+mkdir mpich2-double
+cd mpich2-double
+sed "s|@LIBSUFFIX@|_mpi_d|g" < ../configure > configure; chmod 777 configure
+%configure $DEFOPTS $DOUBLE $MPI --program-suffix=${MPI_SUFFIX}_d --bindir=${MPI_BIN} --libdir=${MPI_LIB}
+sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+make %{?_smp_mflags} mdrun
+cd ..
+%{_mpich2_unload}
 
 
 %install
@@ -353,16 +353,16 @@ cd ..
 %{_openmpi_unload}
 
 ## MPICH 2
-#{_mpich2_load}
+%{_mpich2_load}
 # single precision
-#cd mpich2-single
-#make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
-#cd ..
+cd mpich2-single
+make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+cd ..
 # double precision
-#cd mpich2-double
-#make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
-#cd ..
-#{_mpich2_unload}
+cd mpich2-double
+make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+cd ..
+%{_mpich2_unload}
 
 
 ## Serial versions
@@ -485,14 +485,14 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %{_libdir}/openmpi/lib/lib*.so
 
-#%files mpich2
-#%defattr(-,root,root,-)
-#%{_libdir}/mpich2/bin/g_mdrun*
-#%{_libdir}/mpich2/lib/lib*.so.*
+%files mpich2
+%defattr(-,root,root,-)
+%{_libdir}/mpich2/bin/g_mdrun*
+%{_libdir}/mpich2/lib/lib*.so.*
 
-#%files mpich2-devel
-#%defattr(-,root,root,-)
-#%{_libdir}/mpich2/lib/lib*.so
+%files mpich2-devel
+%defattr(-,root,root,-)
+%{_libdir}/mpich2/lib/lib*.so
 
 %files zsh
 %defattr(-,root,root,-)
@@ -517,8 +517,7 @@ rm -rf %{buildroot}
 * Mon Nov 30 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-3
 - Combine libs with binaries and drop debug packages to avoid explosion of
   number of packages.
-- Adopt use of MPI guidelines. MPICH2 support still missing due to broken
-  mpich2 package.
+- Adopt use of MPI guidelines.
 
 * Fri Jul 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.0.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
