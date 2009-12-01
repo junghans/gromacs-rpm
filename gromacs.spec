@@ -30,7 +30,7 @@ BuildRequires:	libX11-devel
 
 
 Requires:	gromacs-common = %{version}-%{release}
-
+Obsoletes:	gromacs-libs < %{version}-%{release}
 
 %description
 GROMACS is a versatile and extremely well optimized package to perform
@@ -84,6 +84,7 @@ programs.
 Summary:	GROMACS Open MPI binaries and libraries
 Group:		Applications/Engineering
 Obsoletes:	gromacs-mpi < %{version}-%{release}
+Obsoletes:	gromacs-mpi-libs < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
 BuildRequires:	openmpi-devel
 Requires:	openmpi
@@ -460,9 +461,9 @@ rm -rf %{buildroot}
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
 %{_mandir}/man1/*
-%{_datadir}/%{name}
-%exclude %{_datadir}/%{name}/template
-%exclude %{_datadir}/%{name}/tutor
+%{_datadir}/%{name}/
+%exclude %{_datadir}/%{name}/template/
+%exclude %{_datadir}/%{name}/tutor/
 
 %files devel
 %defattr(-,root,root,-)
@@ -473,7 +474,7 @@ rm -rf %{buildroot}
 %{_libdir}/libgmxana_d.so
 %{_libdir}/libmd.so
 %{_libdir}/libmd_d.so
-%{_datadir}/%{name}/template
+%{_datadir}/%{name}/template/
 %exclude %{_datadir}/%{name}/template/Makefile.mpi.*
 
 %files openmpi
@@ -510,7 +511,7 @@ rm -rf %{buildroot}
 
 %files tutor
 %defattr(-,root,root,-)
-%{_datadir}/%{name}/tutor
+%{_datadir}/%{name}/tutor/
 
 
 %changelog
