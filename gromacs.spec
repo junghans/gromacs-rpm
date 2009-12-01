@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.5
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -105,6 +105,7 @@ Summary:	GROMACS Open MPI development libraries
 Group:		Applications/Engineering
 Obsoletes:	gromacs-mpi-devel < %{version}-%{release}
 Requires:	gromacs-devel = %{version}-%{release}
+Requires:	gromacs-openmpi = %{version}-%{release}
 Requires:	openmpi-devel
 
 
@@ -140,6 +141,7 @@ and libraries.
 Summary:	GROMACS MPICH2 development libraries
 Group:		Applications/Engineering
 Requires:	gromacs-devel = %{version}-%{release}
+Requires:	gromacs-mpich2 = %{version}-%{release}
 BuildRequires:	mpich2-devel
 Requires:	mpich2-devel
 
@@ -515,6 +517,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Dec 01 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-5
+- Put correct MPI devel package requires in place.
+
 * Tue Dec 01 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-4
 - Fix obsoletes.
 
