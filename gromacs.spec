@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.0.5
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -449,7 +449,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%{_bindir}/*
+%{_bindir}/g_*
 %{_libdir}/libgmx.so.*
 %{_libdir}/libgmx_d.so.*
 %{_libdir}/libgmxana.so.*
@@ -517,6 +517,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Dec 04 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-6
+- Fix file conflict.
+
 * Tue Dec 01 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-5
 - Put correct MPI devel package requires in place.
 
