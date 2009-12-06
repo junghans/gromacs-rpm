@@ -1,6 +1,6 @@
 Name:		gromacs
-Version:	4.0.5
-Release:	6%{?dist}
+Version:	4.0.6
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -27,7 +27,6 @@ BuildRequires:	gsl-devel
 BuildRequires:	lapack-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
-
 
 Requires:	gromacs-common = %{version}-%{release}
 Obsoletes:	gromacs-libs < %{version}-%{release}
@@ -517,6 +516,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Dec 06 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.6-1
+- Update to 4.0.6.
+
 * Fri Dec 04 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.5-6
 - Fix file conflict.
 
