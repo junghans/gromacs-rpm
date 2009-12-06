@@ -1,5 +1,5 @@
 Name:		gromacs
-Version:	4.0.6
+Version:	4.0.7
 Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
@@ -516,6 +516,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Dec 06 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.7-1
+- Update to 4.0.7.
+
 * Sun Dec 06 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.6-1
 - Update to 4.0.6.
 
