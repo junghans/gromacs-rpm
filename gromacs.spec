@@ -1,5 +1,5 @@
 Name:		gromacs
-Version:	4.0.7
+Version:	4.5.1
 Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
@@ -7,7 +7,8 @@ License:	GPLv2+
 URL:		http://www.gromacs.org
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
-Source1:	ftp://ftp.gromacs.org/pub/manual/manual-4.0.pdf
+# File gotten from http://www.gromacs.org/@api/deki/files/126/=gromacs_manual-4.5.pdf
+Source1:	manual-4.5.pdf
 Source2:	gromacs-template-makefile-single
 Source3:	gromacs-template-makefile-double
 Source4:	gromacs-template-makefile-mpi-single
@@ -21,10 +22,10 @@ Patch1:		gromacs-gmxdemo.patch
 # Patch configure for the library suffix
 Patch2:		gromacs-configure.patch
 
-BuildRequires:	blas-devel
+BuildRequires:	cmake
+BuildRequires:	atlas-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
-BuildRequires:	lapack-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 
@@ -40,6 +41,10 @@ and solid state physics.
 
 This package provides single and double precision binaries.
 The documentation is in the package gromacs-common.
+
+mdrun has been compiled with thread parallellization, so it runs in parallel
+on shared memory systems. If you want to run on a cluster, you probably want
+to install one of the MPI parallellized packages.
 
 N.B. All binaries have names starting with g_, for example mdrun has been
 renamed to g_mdrun.
@@ -95,8 +100,9 @@ It is developed for biomolecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
-This package provides Open MPI single precision and double precision binaries
-and libraries.
+mdrun has been compiled with thread parallellization (for running on
+a single node) and with Open MPI (for running on multiple nodes).
+This package single and double precision binaries and libraries.
 
 
 %package openmpi-devel
@@ -116,7 +122,7 @@ performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
 This package contains development libraries for GROMACS Open MPI.
-You need it if you want to write your own analysis programs.
+You may need it if you want to write your own analysis programs.
 
 
 %package mpich2
@@ -132,9 +138,9 @@ It is developed for biomolecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
-This package provides MPICH2 single precision and double precision binaries
-and libraries.
-
+mdrun has been compiled with thread parallellization (for running on
+a single node) and with MPICH2 (for running on multiple nodes).
+This package single and double precision binaries and libraries.
 
 %package mpich2-devel
 Summary:	GROMACS MPICH2 development libraries
@@ -152,7 +158,7 @@ performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
 This package contains development libraries for GROMACS MPICH2.
-You need it if you want to write your own analysis programs.
+You may need it if you want to write your own analysis programs.
 
 
 
@@ -232,10 +238,10 @@ and solid state physics.
 This package provides tutorials for the use of GROMACS.
 
 %prep
-%setup -q
+%setup -q 
 %patch0 -p1 -b .gmxrc
 %patch1 -p1 -b .gmxdemo
-%patch2 -p1 -b .libsuffix
+#%patch2 -p1 -b .libsuffix
 
 # Fix incorrect permission
 #chmod a-x src/tools/gmx_xpm2ps.c
@@ -243,45 +249,37 @@ This package provides tutorials for the use of GROMACS.
 
 
 %build
+# First, override bug in MPICH2 packaging.
+%{_mpich2_unload}
+
 # Assembly kernels haven't got .note.GNU-stack sections
 # because of incompatibilies with Microsoft Assembler.
 # Add noexecstack to compiler flags
 
 export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
-export LIBS="-lblas -llapack"
+export LIBS="-L%{_libdir}/atlas -lblas -llapack"
 
 # Default options, used for all compilations
-export DEFOPTS="--enable-shared --disable-static --with-external-blas \
-	--with-external-lapack --with-gsl --with-x"
-export SINGLE="--enable-float" # Single precision
-export DOUBLE="--disable-float" # Double precision
-export MPI="--enable-mpi"
+export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON"
+export SINGLE="-D GMX_DOUBLE=OFF" # Single precision
+export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
+export MPI="-D GMX_MPI=ON"
 
 # Add this to the configure options if you want to build a debug version
-export NOASM="--disable-ia32-3dnow --disable-ia32-sse --disable-x86-64-sse \
-	--disable-ppc-altivec --disable-ia64-asm"
-
+export NOASM="-D GMX_ACCELERATION=OFF"
 
 # Single precision
 mkdir single
 cd single
-sed "s|@LIBSUFFIX@||g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $SINGLE
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-
-make %{?_smp_mflags}
+%cmake $DEFOPTS $SINGLE ..
+make VERBOSE=1 %{?_smp_mflags}
 cd ..
 
 # Double precision
 mkdir double
 cd double
-sed "s|@LIBSUFFIX@|_d|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $DOUBLE --program-suffix="_d"
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-
-make %{?_smp_mflags}
+%cmake $DEFOPTS $DOUBLE ..
+make VERBOSE=1 %{?_smp_mflags}
 cd ..
 
 
@@ -294,46 +292,46 @@ export FC=mpif90
 
 ## Open MPI
 %{_openmpi_load}
+# Suffix to be used for single precision is
+SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}"
 # single precision
 mkdir openmpi-single
 cd openmpi-single
-sed "s|@LIBSUFFIX@|_mpi|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $SINGLE $MPI --program-suffix=${MPI_SUFFIX} --bindir=${MPI_BIN} --libdir=${MPI_LIB}
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-make %{?_smp_mflags} mdrun
+%cmake $DEFOPTS $SINGLE $MPI $SUFFIXCONF ..
+make VERBOSE=1 %{?_smp_mflags} mdrun
 cd ..
+
 # double precision
+# Suffix to be used for double precision is
+SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}_d"
 mkdir openmpi-double
 cd openmpi-double
-sed "s|@LIBSUFFIX@|_mpi_d|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $DOUBLE $MPI --program-suffix=${MPI_SUFFIX}_d --bindir=${MPI_BIN} --libdir=${MPI_LIB}
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-make %{?_smp_mflags} mdrun
+%cmake $DEFOPTS $DOUBLE $MPI $SUFFIXCONF ..
+make VERBOSE=1 %{?_smp_mflags} mdrun
 cd ..
 # unload
 %{_openmpi_unload}
 
+
 ## MPICH2
 %{_mpich2_load}
+# Suffix to be used for single precision is
+SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}"
+# MPICH 2 is broken, so need to modify linker command
+export CC="mpicc -lstdc++"
 # single precision
 mkdir mpich2-single
 cd mpich2-single
-sed "s|@LIBSUFFIX@|_mpi|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $SINGLE $MPI --program-suffix=${MPI_SUFFIX} --bindir=${MPI_BIN} --libdir=${MPI_LIB}
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-make %{?_smp_mflags} mdrun
+%cmake $DEFOPTS $SINGLE $MPI $SUFFIXCONF ..
+make VERBOSE=1 %{?_smp_mflags} mdrun
 cd ..
 # double precision
+# Suffix to be used for double precision is
+SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}_d"
 mkdir mpich2-double
 cd mpich2-double
-sed "s|@LIBSUFFIX@|_mpi_d|g" < ../configure > configure; chmod 777 configure
-%configure $DEFOPTS $DOUBLE $MPI --program-suffix=${MPI_SUFFIX}_d --bindir=${MPI_BIN} --libdir=${MPI_LIB}
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
-make %{?_smp_mflags} mdrun
+%cmake $DEFOPTS $DOUBLE $MPI $SUFFIXCONF ..
+make VERBOSE=1 %{?_smp_mflags} mdrun
 cd ..
 %{_mpich2_unload}
 
@@ -344,25 +342,33 @@ rm -rf %{buildroot}
 
 ## Open MPI
 %{_openmpi_load}
+# Make install-mdrun target is broken, do install manually
+mkdir -p %{buildroot}%{_libdir}/openmpi/{bin,lib}
 # single precision
 cd openmpi-single
-make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/openmpi/bin/g_mdrun_openmpi
+cp -a src/*/*.so* %{buildroot}%{_libdir}/openmpi/lib/
 cd ..
 # double precision
 cd openmpi-double
-make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/openmpi/bin/g_mdrun_openmpi_d
+cp -a src/*/*.so* %{buildroot}%{_libdir}/openmpi/lib/
 cd ..
 %{_openmpi_unload}
 
 ## MPICH 2
 %{_mpich2_load}
+# Make install-mdrun target is broken, do install manually
+mkdir -p %{buildroot}%{_libdir}/mpich2/{bin,lib}
 # single precision
 cd mpich2-single
-make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich2/bin/g_mdrun_mpich2
+cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich2/lib/
 cd ..
 # double precision
 cd mpich2-double
-make DESTDIR=%{buildroot} INSTALL="install -p" BINDIR=${MPI_BIN} LIBDIR=${MPI_LIB} install-mdrun
+install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich2/bin/g_mdrun_mpich2_d
+cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich2/lib/
 cd ..
 %{_mpich2_unload}
 
@@ -378,6 +384,13 @@ cd double
 make DESTDIR=%{buildroot} INSTALL="install -p" install
 cd ..
 
+## Now, the rest of the necessary stuff
+
+# Fix location of libraries
+mv %{buildroot}/usr/lib/*.so* %{buildroot}%{_libdir}/
+# and pkgconfig files
+mkdir -p %{buildroot}%{_libdir}/pkgconfig/
+mv %{buildroot}/usr/lib/pkgconfig/* %{buildroot}%{_libdir}/pkgconfig/
 
 # Install manual & packager's note
 install -cpm 644 %{SOURCE1} .
@@ -391,13 +404,13 @@ install -cpm 644 %{SOURCE3} %{buildroot}%{_datadir}/%{name}/template/Makefile.do
 install -cpm 644 %{SOURCE4} %{buildroot}%{_datadir}/%{name}/template/Makefile.mpi.single
 install -cpm 644 %{SOURCE5} %{buildroot}%{_datadir}/%{name}/template/Makefile.mpi.double
 
-
 # Fix GMXRC file permissions
 chmod a+x %{buildroot}%{_bindir}/GMXRC %{buildroot}%{_bindir}/GMXRC.*
 
 # Rename binaries and man pages to prevent clashes
 # (This is done here so that we don't need to mess with machine generated makefiles.
-for bin in anadock do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp highway luck make_edi make_ndx mdrun mk_angndx ngmx pdb2gmx protonate sigeps tpbconv trjcat trjconv trjorder wheel x2top xpm2ps xrama ; do 
+#for bin in anadock do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp highway luck make_edi make_ndx mdrun mk_angndx ngmx pdb2gmx protonate sigeps tpbconv trjcat trjconv trjorder wheel x2top xpm2ps xrama ; do 
+for bin in do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp make_edi make_ndx mdrun mk_angndx pdb2gmx tpbconv trjcat trjconv trjorder xpm2ps; do
 mv %{buildroot}%{_bindir}/${bin} %{buildroot}%{_bindir}/g_${bin}
 mv %{buildroot}%{_bindir}/${bin}_d %{buildroot}%{_bindir}/g_${bin}_d
 done
@@ -406,19 +419,11 @@ for bin in demux.pl xplor2gmx.pl; do
 mv %{buildroot}%{_bindir}/$bin %{buildroot}%{_bindir}/g_${bin}
 done
 
-# MPI-enabled binaries (list will continue when the makefile has
-# the possibility to compile all mpi-enabled files
-for mpi in openmpi mpich2; do
- for mpibin in mdrun; do
-  mv %{buildroot}%{_libdir}/$mpi/bin/${mpibin}_${mpi} %{buildroot}%{_libdir}/$mpi/bin/g_${mpibin}_${mpi}
-  mv %{buildroot}%{_libdir}/$mpi/bin/${mpibin}_${mpi}_d %{buildroot}%{_libdir}/$mpi/bin/g_${mpibin}_${mpi}_d
- done
-done
-
 # Man pages
-for bin in anadock do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp highway make_edi make_ndx mdrun mk_angndx ngmx pdb2gmx protonate sigeps tpbconv trjcat trjconv trjorder wheel x2top xpm2ps xrama ; do 
+#for bin in anadock do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp highway make_edi make_ndx mdrun mk_angndx ngmx pdb2gmx protonate sigeps tpbconv trjcat trjconv trjorder wheel x2top xpm2ps xrama ; do 
+for bin in do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp make_edi make_ndx mdrun mk_angndx pdb2gmx tpbconv trjcat trjconv trjorder xpm2ps; do
 mv %{buildroot}%{_mandir}/man1/${bin}.1 %{buildroot}%{_mandir}/man1/g_${bin}.1
-mv %{buildroot}%{_mandir}/man1/${bin}_d.1 %{buildroot}%{_mandir}/man1/g_${bin}_d.1
+#mv %{buildroot}%{_mandir}/man1/${bin}_d.1 %{buildroot}%{_mandir}/man1/g_${bin}_d.1
 done
 
 # Move completion files around
@@ -453,15 +458,18 @@ rm -rf %{buildroot}
 %{_libdir}/libgmx_d.so.*
 %{_libdir}/libgmxana.so.*
 %{_libdir}/libgmxana_d.so.*
+%{_libdir}/libgmxpreprocess.so.*
+%{_libdir}/libgmxpreprocess_d.so.*
 %{_libdir}/libmd.so.*
 %{_libdir}/libmd_d.so.*
 
 %files common
 %defattr(-,root,root,-)
-%doc AUTHORS COPYING README manual-4.0.pdf README.fedora
+%doc AUTHORS COPYING README manual-4.5.pdf README.fedora
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
 %{_mandir}/man1/*
+%{_mandir}/man7/gromacs.*
 %{_datadir}/%{name}/
 %exclude %{_datadir}/%{name}/template/
 %exclude %{_datadir}/%{name}/tutor/
@@ -473,8 +481,11 @@ rm -rf %{buildroot}
 %{_libdir}/libgmx_d.so
 %{_libdir}/libgmxana.so
 %{_libdir}/libgmxana_d.so
+%{_libdir}/libgmxpreprocess.so
+%{_libdir}/libgmxpreprocess_d.so
 %{_libdir}/libmd.so
 %{_libdir}/libmd_d.so
+%{_libdir}/pkgconfig/*.pc
 %{_datadir}/%{name}/template/
 %exclude %{_datadir}/%{name}/template/Makefile.mpi.*
 
@@ -516,6 +527,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Oct 09 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.1-1
+- Update to 4.5.1.
+
 * Sun Dec 06 2009 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.0.7-1
 - Update to 4.0.7.
 
