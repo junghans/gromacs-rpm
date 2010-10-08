@@ -387,10 +387,12 @@ cd ..
 ## Now, the rest of the necessary stuff
 
 # Fix location of libraries
+%ifarch x86_64 sparc64
 mv %{buildroot}/usr/lib/*.so* %{buildroot}%{_libdir}/
 # and pkgconfig files
 mkdir -p %{buildroot}%{_libdir}/pkgconfig/
 mv %{buildroot}/usr/lib/pkgconfig/* %{buildroot}%{_libdir}/pkgconfig/
+%endif
 
 # Install manual & packager's note
 install -cpm 644 %{SOURCE1} .
