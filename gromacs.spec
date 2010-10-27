@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.5.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -21,6 +21,8 @@ Patch0:		gromacs-GMXRC.patch
 Patch1:		gromacs-gmxdemo.patch
 # Patch configure for the library suffix
 Patch2:		gromacs-configure.patch
+# Patch for BZ #644950, CVE-2010-4001
+Patch3:		gromacs-4.5.1-gmxrc.patch
 
 BuildRequires:	cmake
 BuildRequires:	atlas-devel
@@ -30,7 +32,6 @@ BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 
 Requires:	gromacs-common = %{version}-%{release}
-Obsoletes:	gromacs-libs < %{version}-%{release}
 
 %description
 GROMACS is a versatile and extremely well optimized package to perform
@@ -55,7 +56,7 @@ Summary:	GROMACS shared data and documentation
 Group:		Applications/Engineering
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-common < %{version}-%{release}
+Obsoletes:	gromacs-common < 4.0.7-1
 
 %description common
 GROMACS is a versatile and extremely well optimized package to perform
@@ -84,11 +85,25 @@ molecular dynamics software. You need it if you want to write your own analysis
 programs.
 
 
+%package libs
+Summary:	GROMACS shared libraries
+Group:		System Environment/Libraries
+
+%description libs
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package contains libraries needed for operation of GROMACS.
+
+
+
 %package openmpi
 Summary:	GROMACS Open MPI binaries and libraries
 Group:		Applications/Engineering
 Obsoletes:	gromacs-mpi < %{version}-%{release}
-Obsoletes:	gromacs-mpi-libs < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
 BuildRequires:	openmpi-devel
 Requires:	openmpi
@@ -103,6 +118,22 @@ and solid state physics.
 mdrun has been compiled with thread parallellization (for running on
 a single node) and with Open MPI (for running on multiple nodes).
 This package single and double precision binaries and libraries.
+
+
+%package openmpi-libs
+Summary:	GROMACS Open MPI shared libraries
+Group:		System Environment/Libraries
+Obsoletes:	gromacs-mpi-libs < %{version}-%{release}
+Requires:	openmpi
+
+%description openmpi-libs
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package contains libraries needed for operation of GROMACS Open MPI.
 
 
 %package openmpi-devel
@@ -142,6 +173,21 @@ mdrun has been compiled with thread parallellization (for running on
 a single node) and with MPICH2 (for running on multiple nodes).
 This package single and double precision binaries and libraries.
 
+%package mpich2-libs
+Summary:	GROMACS MPICH2 shared libraries
+Group:		System Environment/Libraries
+Requires:	mpich2
+
+%description mpich2-libs
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package contains libraries needed for operation of GROMACS MPICH2.
+
+
 %package mpich2-devel
 Summary:	GROMACS MPICH2 development libraries
 Group:		Applications/Engineering
@@ -168,7 +214,7 @@ Group:		Applications/Engineering
 Requires:	bash-completion
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-bash < %{version}-%{release}
+Obsoletes:	gromacs-bash < 4.0.7-1 
 
 
 %description bash
@@ -187,7 +233,7 @@ Group:		Applications/Engineering
 Requires:	zsh
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-zsh < %{version}-%{release}
+Obsoletes:	gromacs-zsh < 4.0.7-1
 
 
 %description zsh
@@ -207,7 +253,7 @@ Group:		Applications/Engineering
 Requires:	csh
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-csh < %{version}-%{release}
+Obsoletes:	gromacs-csh < 4.0.7-1 
 
 
 %description csh
@@ -226,7 +272,7 @@ Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 BuildArch:	noarch
 # Due to switch to noarch package
-Obsoletes:	gromacs-tutor < %{version}-%{release}
+Obsoletes:	gromacs-tutor < 4.0.7-1 
 
 %description tutor
 GROMACS is a versatile and extremely well optimized package to perform
@@ -242,6 +288,7 @@ This package provides tutorials for the use of GROMACS.
 %patch0 -p1 -b .gmxrc
 %patch1 -p1 -b .gmxdemo
 #%patch2 -p1 -b .libsuffix
+%patch3 -p1 -b .gmxrc_cve
 
 # Fix incorrect permission
 #chmod a-x src/tools/gmx_xpm2ps.c
@@ -456,14 +503,6 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %{_bindir}/g_*
-%{_libdir}/libgmx.so.*
-%{_libdir}/libgmx_d.so.*
-%{_libdir}/libgmxana.so.*
-%{_libdir}/libgmxana_d.so.*
-%{_libdir}/libgmxpreprocess.so.*
-%{_libdir}/libgmxpreprocess_d.so.*
-%{_libdir}/libmd.so.*
-%{_libdir}/libmd_d.so.*
 
 %files common
 %defattr(-,root,root,-)
@@ -475,6 +514,17 @@ rm -rf %{buildroot}
 %{_datadir}/%{name}/
 %exclude %{_datadir}/%{name}/template/
 %exclude %{_datadir}/%{name}/tutor/
+
+%files libs
+%defattr(-,root,root,-)
+%{_libdir}/libgmx.so.*
+%{_libdir}/libgmx_d.so.*
+%{_libdir}/libgmxana.so.*
+%{_libdir}/libgmxana_d.so.*
+%{_libdir}/libgmxpreprocess.so.*
+%{_libdir}/libgmxpreprocess_d.so.*
+%{_libdir}/libmd.so.*
+%{_libdir}/libmd_d.so.*
 
 %files devel
 %defattr(-,root,root,-)
@@ -494,6 +544,9 @@ rm -rf %{buildroot}
 %files openmpi
 %defattr(-,root,root,-)
 %{_libdir}/openmpi/bin/g_mdrun*
+
+%files openmpi-libs
+%defattr(-,root,root,-)
 %{_libdir}/openmpi/lib/lib*.so.*
 
 %files openmpi-devel
@@ -503,6 +556,9 @@ rm -rf %{buildroot}
 %files mpich2
 %defattr(-,root,root,-)
 %{_libdir}/mpich2/bin/g_mdrun*
+
+%files mpich2-libs
+%defattr(-,root,root,-)
 %{_libdir}/mpich2/lib/lib*.so.*
 
 %files mpich2-devel
@@ -529,6 +585,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Oct 27 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.1-2
+- Patch around #644950.
+- Split libraries in own packages to avoid multilib problems.
+
 * Sat Oct 09 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.1-1
 - Update to 4.5.1.
 
