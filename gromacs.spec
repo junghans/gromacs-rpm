@@ -1,6 +1,6 @@
 Name:		gromacs
-Version:	4.5.1
-Release:	2%{?dist}
+Version:	4.5.2
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -19,10 +19,6 @@ Source6:	gromacs-README.fedora
 Patch0:		gromacs-GMXRC.patch
 # Patch gmxdemo for new filenames
 Patch1:		gromacs-gmxdemo.patch
-# Patch configure for the library suffix
-Patch2:		gromacs-configure.patch
-# Patch for BZ #644950, CVE-2010-4001
-Patch3:		gromacs-4.5.1-gmxrc.patch
 
 BuildRequires:	cmake
 BuildRequires:	atlas-devel
@@ -287,8 +283,6 @@ This package provides tutorials for the use of GROMACS.
 %setup -q 
 %patch0 -p1 -b .gmxrc
 %patch1 -p1 -b .gmxdemo
-#%patch2 -p1 -b .libsuffix
-%patch3 -p1 -b .gmxrc_cve
 
 # Fix incorrect permission
 #chmod a-x src/tools/gmx_xpm2ps.c
@@ -490,9 +484,9 @@ mv %{buildroot}%{_bindir}/completion.csh .
 find %{buildroot} -name *.la -exec rm -rf {} \;
 
 # Post install for libs. MPI packages don't need this.
-%post -p /sbin/ldconfig
+%post libs -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun libs -p /sbin/ldconfig
 
 %clean
 rm -rf %{buildroot}
@@ -585,6 +579,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Nov 01 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.2-1
+- Update to 4.5.2.
+
 * Wed Oct 27 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.1-2
 - Patch around #644950.
 - Split libraries in own packages to avoid multilib problems.
