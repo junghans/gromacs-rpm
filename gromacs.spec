@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.5.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -28,6 +28,10 @@ BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 
 Requires:	gromacs-common = %{version}-%{release}
+
+# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed
+Obsoletes:	gromacs < 4.5.2-1 
+
 
 %description
 GROMACS is a versatile and extremely well optimized package to perform
@@ -579,6 +583,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Nov 03 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.2-2
+- Make gromacs package obsolete older versions of gromacs package due to the
+  branching of libraries.
+
 * Mon Nov 01 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.2-1
 - Update to 4.5.2.
 
