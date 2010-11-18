@@ -1,6 +1,6 @@
 Name:		gromacs
-Version:	4.5.2
-Release:	3%{?dist}
+Version:	4.5.3
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -583,6 +583,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Nov 18 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.3-1
+- Update to 4.5.3.
+
 * Fri Nov 05 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.2-3
 - Rebuild due to libxml2 soname bump.
 
