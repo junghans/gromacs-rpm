@@ -1,6 +1,6 @@
 Name:		gromacs
 Version:	4.5.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -107,6 +107,8 @@ Obsoletes:	gromacs-mpi < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
 BuildRequires:	openmpi-devel
 Requires:	openmpi
+# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed
+Obsoletes:	gromacs-openmpi < 4.5.3-2
 
 %description openmpi
 GROMACS is a versatile and extremely well optimized package to perform
@@ -161,6 +163,8 @@ Summary:	GROMACS MPICH2 binaries and libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	mpich2
+# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed
+Obsoletes:	gromacs-mpich2 < 4.5.3-2
 
 %description mpich2
 GROMACS is a versatile and extremely well optimized package to perform
@@ -583,6 +587,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Dec 20 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.3-2
+- Fix rest of BZ #649338.
+
 * Thu Nov 18 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.3-1
 - Update to 4.5.3.
 
