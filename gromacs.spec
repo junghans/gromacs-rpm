@@ -1,3 +1,9 @@
+%ifnarch s390 s390x
+%global with_openmpi 1
+%else
+%global with_openmpi 0
+%endif
+
 Name:		gromacs
 Version:	4.5.3
 Release:	2%{?dist}
@@ -99,7 +105,7 @@ and solid state physics.
 This package contains libraries needed for operation of GROMACS.
 
 
-
+%if %{with_openmpi}
 %package openmpi
 Summary:	GROMACS Open MPI binaries and libraries
 Group:		Applications/Engineering
@@ -156,6 +162,7 @@ and solid state physics.
 
 This package contains development libraries for GROMACS Open MPI.
 You may need it if you want to write your own analysis programs.
+%endif
 
 
 %package mpich2
@@ -309,7 +316,7 @@ export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
 export LIBS="-L%{_libdir}/atlas -lblas -llapack"
 
 # Default options, used for all compilations
-export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON"
+export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON -DLIB=%{_lib}"
 export SINGLE="-D GMX_DOUBLE=OFF" # Single precision
 export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
 export MPI="-D GMX_MPI=ON"
@@ -340,6 +347,7 @@ export F90=mpif90
 export FC=mpif90
 
 ## Open MPI
+%if %{with_openmpi}
 %{_openmpi_load}
 # Suffix to be used for single precision is
 SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}"
@@ -360,6 +368,7 @@ make VERBOSE=1 %{?_smp_mflags} mdrun
 cd ..
 # unload
 %{_openmpi_unload}
+%endif
 
 
 ## MPICH2
@@ -390,6 +399,7 @@ rm -rf %{buildroot}
 
 
 ## Open MPI
+%if %{with_openmpi}
 %{_openmpi_load}
 # Make install-mdrun target is broken, do install manually
 mkdir -p %{buildroot}%{_libdir}/openmpi/{bin,lib}
@@ -404,6 +414,7 @@ install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/openmpi/bin/g_mdrun_op
 cp -a src/*/*.so* %{buildroot}%{_libdir}/openmpi/lib/
 cd ..
 %{_openmpi_unload}
+%endif
 
 ## MPICH 2
 %{_mpich2_load}
@@ -543,6 +554,7 @@ rm -rf %{buildroot}
 %{_datadir}/%{name}/template/
 %exclude %{_datadir}/%{name}/template/Makefile.mpi.*
 
+%if %{with_openmpi}
 %files openmpi
 %defattr(-,root,root,-)
 %{_libdir}/openmpi/bin/g_mdrun*
@@ -554,6 +566,7 @@ rm -rf %{buildroot}
 %files openmpi-devel
 %defattr(-,root,root,-)
 %{_libdir}/openmpi/lib/lib*.so
+%endif
 
 %files mpich2
 %defattr(-,root,root,-)
@@ -587,6 +600,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Feb 07 2011 Dan Horák <dan[at]danny.cz> - 4.5.3-3
+- conditionalize OpenMPI support
+- fix build on 64-bit platforms
+
 * Mon Dec 20 2010 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.3-2
 - Fix rest of BZ #649338.
 
