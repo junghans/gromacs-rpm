@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	4.5.3
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
