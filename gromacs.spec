@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	4.5.3
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -600,6 +600,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.5.3-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
 * Mon Feb 07 2011 Dan Horák <dan[at]danny.cz> - 4.5.3-3
 - conditionalize OpenMPI support
 - fix build on 64-bit platforms
