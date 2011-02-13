@@ -32,6 +32,8 @@ BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
+# To get rid of executable stacks
+BuildRequires:	prelink
 
 Requires:	gromacs-common = %{version}-%{release}
 
@@ -446,14 +448,6 @@ cd ..
 
 ## Now, the rest of the necessary stuff
 
-# Fix location of libraries
-%ifarch x86_64 sparc64
-mv %{buildroot}/usr/lib/*.so* %{buildroot}%{_libdir}/
-# and pkgconfig files
-mkdir -p %{buildroot}%{_libdir}/pkgconfig/
-mv %{buildroot}/usr/lib/pkgconfig/* %{buildroot}%{_libdir}/pkgconfig/
-%endif
-
 # Install manual & packager's note
 install -cpm 644 %{SOURCE1} .
 install -cpm 644 %{SOURCE6} README.fedora
@@ -501,6 +495,9 @@ mv %{buildroot}%{_bindir}/completion.csh .
 
 # Remove .la files
 find %{buildroot} -name *.la -exec rm -rf {} \;
+
+# Get rid of executable stacks
+find %{buildroot} -name *.so.* -exec execstack -c {} \;
 
 # Post install for libs. MPI packages don't need this.
 %post libs -p /sbin/ldconfig
@@ -600,8 +597,8 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.5.3-4
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+* Sun Feb 13 2011 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.3-4
+- Get rid of executable stacks.
 
 * Mon Feb 07 2011 Dan Horák <dan[at]danny.cz> - 4.5.3-3
 - conditionalize OpenMPI support
