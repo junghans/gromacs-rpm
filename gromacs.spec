@@ -5,16 +5,17 @@
 %endif
 
 Name:		gromacs
-Version:	4.5.3
-Release:	4%{?dist}
+Version:	4.5.4
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
 URL:		http://www.gromacs.org
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
-# File gotten from http://www.gromacs.org/@api/deki/files/126/=gromacs_manual-4.5.pdf
-Source1:	manual-4.5.pdf
+# File gotten from 
+# http://www.gromacs.org/@api/deki/files/152/=manual-4.5.4.pdf
+Source1:	manual-4.5.4.pdf
 Source2:	gromacs-template-makefile-single
 Source3:	gromacs-template-makefile-double
 Source4:	gromacs-template-makefile-mpi-single
@@ -516,7 +517,7 @@ rm -rf %{buildroot}
 
 %files common
 %defattr(-,root,root,-)
-%doc AUTHORS COPYING README manual-4.5.pdf README.fedora
+%doc AUTHORS COPYING README manual-4.5.4.pdf README.fedora
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
 %{_mandir}/man1/*
@@ -597,6 +598,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Mar 23 2011 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.4-1
+- Update to 4.5.4.
+
 * Sun Feb 13 2011 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.3-4
 - Get rid of executable stacks.
 

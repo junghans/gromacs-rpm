@@ -1,6 +1,6 @@
-diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tutor/gmxdemo/demo
---- gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo	2010-09-29 14:35:03.000000000 +0300
-+++ gromacs-4.5.2/share/tutor/gmxdemo/demo	2010-11-01 14:04:34.833273502 +0200
+diff -up gromacs-4.5.4/share/tutor/gmxdemo/demo.orig gromacs-4.5.4/share/tutor/gmxdemo/demo
+--- gromacs-4.5.4/share/tutor/gmxdemo/demo.orig	2011-03-04 13:10:43.000000000 +0200
++++ gromacs-4.5.4/share/tutor/gmxdemo/demo	2011-03-23 15:30:14.004163534 +0200
 @@ -58,10 +58,10 @@ cat << _EOF_
  -----------------------------------------------------------------
  Before we can start any simulation we need a molecular toplogy
@@ -13,7 +13,7 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
 +Because most pdb files do not contain all hydrogen atoms, the g_pdb2gmx
  program will also add them to our peptide. The output file which
  contains the structure of the peptide when hydrogen atoms are added is a
- gromos structure file ( .gro extension )  
+ GROMOS structure file ( .gro extension )  
 @@ -72,22 +72,22 @@ _EOF_
  
  if ( $?DISPLAY ) then
@@ -45,7 +45,7 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
 @@ -99,14 +99,14 @@ cat << _EOF_
  -----------------------------------------------------------------
  -----------------------------------------------------------------
- Because a simulation of a peptide in vacua is a bit unrealistic, we
+ Because a simulation of a peptide in vacuo is a bit unrealistic, we
 -have to solvate our peptide in a box of water. genbox is the program
 +have to solvate our peptide in a box of water. g_genbox is the program
  we use to do this.
@@ -54,15 +54,15 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
 -containing the sizes of the desired water box. The output of genbox is
 +The g_genbox program reads the peptide structure file and an input file
 +containing the sizes of the desired water box. The output of g_genbox is
- a gromos structure file of a peptide solvated in a box of water. The
+ a GROMOS structure file of a peptide solvated in a box of water. The
 -genbox program also changes the topology file ( .top extension ) to
 -include water. First we will use the program editconf to define the
 +g_genbox program also changes the topology file ( .top extension ) to
 +include water. First we will use the program g_editconf to define the
- right boxsize for our system.
+ right box size for our system.
  
  -----------------------------------------------------------------
-@@ -114,22 +114,22 @@ right boxsize for our system.
+@@ -114,22 +114,22 @@ right box size for our system.
  _EOF_
  
  if ( $?DISPLAY ) then
@@ -93,19 +93,19 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  
 @@ -142,7 +142,7 @@ cat << _EOF_
  -----------------------------------------------------------------
- In principle we can start a Molecular Dynamics simulation now. However
+ In principle we can start a molecular dynamics simulation now. However
  it is not very wise to do so, because our system is full of close
 -contacts. These close contacts are mainly a result of the genbox
 +contacts. These close contacts are mainly a result of the g_genbox
  program. The added solvent might have some close contacts with the
  peptide resulting in very high repulsive energies. If we would start a
- Molecular Dynamics (MD) simulation without energy minimisation the
-@@ -153,7 +153,7 @@ Energy Minimisation (EM). Energy minimis
+ molecular dynamics (MD) simulation without energy minimisation the
+@@ -153,7 +153,7 @@ energy minimisation (EM). Energy minimis
  coordinates of our system to remove high energies from our system.  
  
- Before we can start the Energy Minimisation we have to preprocess all
+ Before we can start the energy minimisation we have to preprocess all
 -the input files with the GROMACS preprocessor named grompp. grompp
-+the input files with the GROMACS preprocessor named g_g_grompp. g_g_grompp
++the input files with the GROMACS preprocessor named g_grompp. g_grompp
  preprocesses the topology file (.top), the structure file (.gro) and a
  parameter file (.mdp) resulting in a binary topology file (.tpr
  extension). This binary topology file contains all information for a 
@@ -114,11 +114,11 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  
  if ( $?DISPLAY ) then
 -	echo "The output of the grompp program should appear"  
-+	echo "The output of the g_g_grompp program should appear"  
++	echo "The output of the g_grompp program should appear"  
          echo "in a separate xterm window"
  endif
  
-@@ -191,13 +191,13 @@ emtol               =  1000.0
+@@ -190,13 +190,13 @@ emtol               =  1000.0
  emstep              =  0.01
  _EOF_
  
@@ -136,7 +136,7 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  echo -n "Press <enter>"
  set  ans = $<
  
-@@ -210,8 +210,8 @@ cat << _EOF_
+@@ -209,8 +209,8 @@ cat << _EOF_
  -----------------------------------------------------------------
  Now the binary topology file is generated, we can start the energy
  minimisation (EM). The program which performs the EM is called
@@ -145,9 +145,9 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
 +g_mdrun. In fact all simulations are performed by the same program:
 +g_mdrun. 
  
- As the Energy Minimisation is running, watch the output of the
+ As the energy minimisation is running, watch the output of the
  program. The first number ( from left to right ) is the number of the
-@@ -224,21 +224,21 @@ rapidly drops down, and converges, to a 
+@@ -223,21 +223,21 @@ rapidly drops down, and converges, to a 
  _EOF_
  
  if ( $?DISPLAY ) then
@@ -174,25 +174,25 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  echo -n "Press <enter>"
  set  ans = $<
  
-@@ -255,7 +255,7 @@ fixed. This is called position restraine
+@@ -254,7 +254,7 @@ fixed. This is called position restraine
  
- Position Restrained MD keeps the peptide fixed and lets all water
+ Position restrained MD keeps the peptide fixed and lets all water
  molecules equilibrate around the peptide in order to fill holes
--etc. which were not filled by the genbox program.
-+etc. which were not filled by the g_genbox program.
+-etc. that were not filled by the genbox program.
++etc. that were not filled by the g_genbox program.
  
  We are first going to preprocess the input files to generate the
  binary topology. The input files are the topology file, the structure
-@@ -274,7 +274,7 @@ performed ( like EM, PR-MD and MD etc. )
+@@ -273,7 +273,7 @@ performed ( like EM, PR-MD and MD etc. )
  _EOF_
  
  if ( $?DISPLAY ) then
 -	echo "The output of the grompp program should appear"  
-+	echo "The output of the g_g_grompp program should appear"  
++	echo "The output of the g_grompp program should appear"  
          echo "in a separate xterm window"
  endif
  
-@@ -318,12 +318,12 @@ gen_seed            =  173529
+@@ -317,12 +317,12 @@ gen_seed            =  173529
  _EOF_
  
  
@@ -209,7 +209,7 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  
  echo -n "Press <enter>"
  set  ans = $<
-@@ -346,19 +346,19 @@ _EOF_
+@@ -345,19 +345,19 @@ _EOF_
  
  if ( $?DISPLAY ) then
  	echo "Because your DISPLAY variable is set, I will pop up a" 
@@ -234,25 +234,25 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  echo -n "Press <enter>"
  set  ans = $<
  
-@@ -371,7 +371,7 @@ cat << _EOF_
+@@ -370,7 +370,7 @@ cat << _EOF_
  -----------------------------------------------------------------
- Now our complete system is finally ready for the actual Molecular
- Dynamics simulation. We start again by preprocessing the input files
+ Now our complete system is finally ready for the actual molecular
+ dynamics simulation. We start again by preprocessing the input files
 -by the grompp program to generate the binary topology file (.tpb/.tpr
-+by the g_g_grompp program to generate the binary topology file (.tpb/.tpr
++by the g_grompp program to generate the binary topology file (.tpb/.tpr
  extension).
  
  -----------------------------------------------------------------
-@@ -379,7 +379,7 @@ extension).
+@@ -378,7 +378,7 @@ extension).
  _EOF_
  
  if ( $?DISPLAY ) then
 -	echo "The output of the grompp program should appear"  
-+	echo "The output of the g_g_grompp program should appear"  
++	echo "The output of the g_grompp program should appear"  
          echo "in a separate xterm window"
  endif
  
-@@ -419,13 +419,13 @@ gen_temp            =  300.0
+@@ -418,13 +418,13 @@ gen_temp            =  300.0
  gen_seed            =  173529
  _EOF_
  
@@ -270,7 +270,7 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  echo -n "Press <enter>"
  set  ans = $<
  
-@@ -444,20 +444,20 @@ increasing ( the total number of steps i
+@@ -443,20 +443,20 @@ increasing ( the total number of steps i
  _EOF_
  
  if ( $?DISPLAY ) then
@@ -296,8 +296,8 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  echo -n "Press <enter>"
  set  ans = $<
  
-@@ -472,10 +472,10 @@ We are finished simulating, and we are g
- trajectory. The trajectory file ( .trj extension ) contains all
+@@ -471,10 +471,10 @@ We are finished simulating, and we are g
+ trajectory. The trajectory file ( .trr extension ) contains all
  coordinates, velocities and forces of all the atoms in our system. 
  
 -The next program we are going run is ngmx. ngmx is a very simple
@@ -309,7 +309,7 @@ diff -up gromacs-4.5.2/share/tutor/gmxdemo/demo.gmxdemo gromacs-4.5.2/share/tuto
  buttons to view your trajectory.
  
  1. Once the program has been started a dialog box shows up. Click on
-@@ -497,7 +497,7 @@ _EOF_
+@@ -496,7 +496,7 @@ _EOF_
  
  if ( $?DISPLAY ) then
  	echo Starting Trajectory viewer...
