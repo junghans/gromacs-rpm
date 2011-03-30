@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	4.5.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -598,6 +598,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Mar 30 2011 Deji Akingunola <dakingun@gmail.com> - 4.5.4-2
+- Rebuild for mpich2 soname bump
+
 * Wed Mar 23 2011 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.4-1
 - Update to 4.5.4.
 
