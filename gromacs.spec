@@ -5,8 +5,8 @@
 %endif
 
 Name:		gromacs
-Version:	4.5.4
-Release:	2%{?dist}
+Version:	4.5.5
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -319,7 +319,7 @@ export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
 export LIBS="-L%{_libdir}/atlas -lblas -llapack"
 
 # Default options, used for all compilations
-export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON -DLIB=%{_lib}"
+export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON -DGMXLIB=%{_lib}"
 export SINGLE="-D GMX_DOUBLE=OFF" # Single precision
 export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
 export MPI="-D GMX_MPI=ON"
@@ -598,6 +598,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Sep 20 2011 Jussi Lehtola <jussilehtola@fedoraproject.org> - 4.5.5-1
+- Update to 4.5.5.
+
 * Wed Mar 30 2011 Deji Akingunola <dakingun@gmail.com> - 4.5.4-2
 - Rebuild for mpich2 soname bump
 
