@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	4.6
-Release:	0.1.beta3%{?dist}
+Release:	0.2.beta3%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -19,6 +19,8 @@ Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}-beta3.tar.gz
 #Source1:	manual-4.5.4.pdf
 Source1:	ftp://ftp.gromacs.org/pub/manual/gromacs-manual-4.6-beta1.pdf
 Source6:	gromacs-README.fedora
+# fix build on non-x86 arches
+Patch0:		gromacs-git-d24f81b3.patch
 
 BuildRequires:	cmake
 BuildRequires:	atlas-devel
@@ -290,6 +292,7 @@ script.
 
 %prep
 %setup -q -n %{name}-%{version}-beta3
+%patch0 -p1 -b .non-x86
 #patch0 -p1 -b .gmxrc
 #patch1 -p1 -b .gmxdemo
 
@@ -585,6 +588,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Dec 31 2012 Dan Horák <dan[at]danny.cz> - 4.6-0.2.beta3
+- fix build on non-x86 arches
+
 * Mon Dec 24 2012 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6-0.1.beta3
 - Update to 4.6 beta 3.
 
