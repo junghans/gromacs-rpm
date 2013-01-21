@@ -6,21 +6,18 @@
 
 Name:		gromacs
 Version:	4.6
-Release:	0.2.beta3%{?dist}
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
 URL:		http://www.gromacs.org
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-#Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
-Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}-beta3.tar.gz
+Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
 # File gotten from 
 # http://www.gromacs.org/@api/deki/files/152/=manual-4.5.4.pdf
 #Source1:	manual-4.5.4.pdf
-Source1:	ftp://ftp.gromacs.org/pub/manual/gromacs-manual-4.6-beta1.pdf
+Source1:	ftp://ftp.gromacs.org/pub/manual/manual-4.6.pdf
 Source6:	gromacs-README.fedora
-# fix build on non-x86 arches
-Patch0:		gromacs-git-d24f81b3.patch
 
 BuildRequires:	cmake
 BuildRequires:	atlas-devel
@@ -291,20 +288,9 @@ This package provides scripts needed to run GROMACS with csh and a completion
 script.
 
 %prep
-%setup -q -n %{name}-%{version}-beta3
-%patch0 -p1 -b .non-x86
-#patch0 -p1 -b .gmxrc
-#patch1 -p1 -b .gmxdemo
-
-# Fix incorrect permission
-#chmod a-x src/tools/gmx_xpm2ps.c
-
-
+%setup -q
 
 %build
-# First, override bug in MPICH2 packaging.
-%{_mpich2_unload}
-
 # Assembly kernels haven't got .note.GNU-stack sections
 # because of incompatibilies with Microsoft Assembler.
 # Add noexecstack to compiler flags
@@ -313,7 +299,7 @@ export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
 export LIBS="-L%{_libdir}/atlas -lblas -llapack"
 
 # Default options, used for all compilations
-export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON -DGMXLIB=%{_lib} -DGMX_X11=ON"
+export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON -DGMXLIB=%{_lib} -DGMX_X11=ON -DCMAKE_C_FLAGS_RELEASE= -DCMAKE_CXX_FLAGS_RELEASE="
 export SINGLE="-D GMX_DOUBLE=OFF" # Single precision
 export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
 export MPI="-D GMX_MPI=ON"
@@ -588,6 +574,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jan 21 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6-1
+- Update to stable 4.6 release.
+
 * Mon Dec 31 2012 Dan Horák <dan[at]danny.cz> - 4.6-0.2.beta3
 - fix build on non-x86 arches
 
