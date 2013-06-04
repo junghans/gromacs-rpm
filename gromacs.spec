@@ -5,7 +5,7 @@
 %endif
 
 Name:		gromacs
-Version:	4.6.1
+Version:	4.6.2
 Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
@@ -571,6 +571,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jun 04 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6.2-1
+- Update to 4.6.2.
+
 * Wed Mar 06 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6.1-1
 - Update to 4.6.1.
 
