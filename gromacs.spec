@@ -5,7 +5,7 @@
 %endif
 
 Name:		gromacs
-Version:	4.6.2
+Version:	4.6.3
 Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
@@ -13,7 +13,8 @@ License:	GPLv2+
 URL:		http://www.gromacs.org
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
-Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
+# Manual is still 4.6.2
+Source1:	ftp://ftp.gromacs.org/pub/manual/manual-4.6.2.pdf
 Source6:	gromacs-README.fedora
 
 BuildRequires:	cmake
@@ -571,6 +572,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Jul 06 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6.3-1
+- Update to 4.6.3.
+
 * Tue Jun 04 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6.2-1
 - Update to 4.6.2.
 
