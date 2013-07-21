@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	4.6.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -161,15 +161,16 @@ You may need it if you want to write your own analysis programs.
 %endif
 
 
-%package mpich2
-Summary:	GROMACS MPICH2 binaries and libraries
+%package mpich
+Summary:	GROMACS MPICH binaries and libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
-Requires:	mpich2
-# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed
-Obsoletes:	gromacs-mpich2 < 4.5.3-2
+Requires:	mpich
+# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed (at version 4.5.3-2)
+Provides:	%{name}-mpich2 = %{version}-%{release}
+Obsoletes:	gromacs-mpich2 < 4.6.3-2
 
-%description mpich2
+%description mpich
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
 It is developed for biomolecules like proteins, but the extremely high
@@ -177,40 +178,44 @@ performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
 mdrun has been compiled with thread parallellization (for running on
-a single node) and with MPICH2 (for running on multiple nodes).
+a single node) and with MPICH (for running on multiple nodes).
 This package single and double precision binaries and libraries.
 
-%package mpich2-libs
-Summary:	GROMACS MPICH2 shared libraries
+%package mpich-libs
+Summary:	GROMACS MPICH shared libraries
 Group:		System Environment/Libraries
-Requires:	mpich2
+Requires:	mpich
+Provides:	%{name}-mpich2-libs = %{version}-%{release}
+Obsoletes:	%{name}-mpich2-libs < 4.6.3-2
 
-%description mpich2-libs
+%description mpich-libs
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
 It is developed for biomolecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
-This package contains libraries needed for operation of GROMACS MPICH2.
+This package contains libraries needed for operation of GROMACS MPICH.
 
 
-%package mpich2-devel
-Summary:	GROMACS MPICH2 development libraries
+%package mpich-devel
+Summary:	GROMACS MPICH development libraries
 Group:		Applications/Engineering
 Requires:	gromacs-devel = %{version}-%{release}
-Requires:	gromacs-mpich2 = %{version}-%{release}
-BuildRequires:	mpich2-devel
-Requires:	mpich2-devel
+Requires:	gromacs-mpich = %{version}-%{release}
+BuildRequires:	mpich-devel
+Requires:	mpich-devel
+Provides:	%{name}-mpich2-devel = %{version}-%{release}
+Obsoletes:	%{name}-mpich2-devel < 4.6.3-2
 
-%description mpich2-devel
+%description mpich-devel
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
 It is developed for biomolecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
-This package contains development libraries for GROMACS MPICH2.
+This package contains development libraries for GROMACS MPICH.
 You may need it if you want to write your own analysis programs.
 
 %package ngmx
@@ -357,27 +362,27 @@ cd ..
 %endif
 
 
-## MPICH2
-%{_mpich2_load}
+## MPICH
+%{_mpich_load}
 # Suffix to be used for single precision is
 SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}"
 # MPICH 2 is broken, so need to modify linker command
 export CC="mpicc -lstdc++"
 # single precision
-mkdir mpich2-single
-cd mpich2-single
+mkdir mpich-single
+cd mpich-single
 %cmake $DEFOPTS $SINGLE $MPI $SUFFIXCONF ..
 make VERBOSE=1 %{?_smp_mflags} mdrun
 cd ..
 # double precision
 # Suffix to be used for double precision is
 SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}_d"
-mkdir mpich2-double
-cd mpich2-double
+mkdir mpich-double
+cd mpich-double
 %cmake $DEFOPTS $DOUBLE $MPI $SUFFIXCONF ..
 make VERBOSE=1 %{?_smp_mflags} mdrun
 cd ..
-%{_mpich2_unload}
+%{_mpich_unload}
 
 
 %install
@@ -402,21 +407,21 @@ cd ..
 %{_openmpi_unload}
 %endif
 
-## MPICH 2
-%{_mpich2_load}
+## MPICH
+%{_mpich_load}
 # Make install-mdrun target is broken, do install manually
-mkdir -p %{buildroot}%{_libdir}/mpich2/{bin,lib}
+mkdir -p %{buildroot}%{_libdir}/mpich/{bin,lib}
 # single precision
-cd mpich2-single
-install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich2/bin/g_mdrun_mpich2
-cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich2/lib/
+cd mpich-single
+install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich/bin/g_mdrun_mpich
+cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich/lib/
 cd ..
 # double precision
-cd mpich2-double
-install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich2/bin/g_mdrun_mpich2_d
-cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich2/lib/
+cd mpich-double
+install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich/bin/g_mdrun_mpich_d
+cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich/lib/
 cd ..
-%{_mpich2_unload}
+%{_mpich_unload}
 
 
 ## Serial versions
@@ -544,17 +549,17 @@ rm -rf %{buildroot}
 %{_libdir}/openmpi/lib/lib*.so
 %endif
 
-%files mpich2
+%files mpich
 %defattr(-,root,root,-)
-%{_libdir}/mpich2/bin/g_mdrun*
+%{_libdir}/mpich/bin/g_mdrun*
 
-%files mpich2-libs
+%files mpich-libs
 %defattr(-,root,root,-)
-%{_libdir}/mpich2/lib/lib*.so.*
+%{_libdir}/mpich/lib/lib*.so.*
 
-%files mpich2-devel
+%files mpich-devel
 %defattr(-,root,root,-)
-%{_libdir}/mpich2/lib/lib*.so
+%{_libdir}/mpich/lib/lib*.so
 
 %files zsh
 %defattr(-,root,root,-)
@@ -572,6 +577,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Jul 20 2013 Deji Akingunola <dakingun@gmail.com> - 4.6.3-2
+- Rename mpich2 sub-packages to mpich and rebuild for mpich-3.0
+
 * Sat Jul 06 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6.3-1
 - Update to 4.6.3.
 
