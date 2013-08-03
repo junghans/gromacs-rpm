@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	4.6.3
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -577,6 +577,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.6.3-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
 * Sat Jul 20 2013 Deji Akingunola <dakingun@gmail.com> - 4.6.3-2
 - Rename mpich2 sub-packages to mpich and rebuild for mpich-3.0
 
