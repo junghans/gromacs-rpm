@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	4.6.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -576,6 +576,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Feb 22 2014 Deji Akingunola <dakingun@gmail.com> - 4.6.5-2
+- Rebuild for mpich-3.1
+
 * Tue Dec 03 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 4.6.5-1
 - Update to 4.6.5.
 
