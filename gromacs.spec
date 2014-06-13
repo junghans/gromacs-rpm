@@ -6,12 +6,12 @@
 
 Name:		gromacs
 Version:	4.6.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
 URL:		http://www.gromacs.org
-BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
 Source6:	gromacs-README.fedora
@@ -24,12 +24,11 @@ BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 BuildRequires:	lesstif-devel
 # To get rid of executable stacks
+%ifnarch aarch64 ppc64le
 BuildRequires:	prelink
+%endif
 
 Requires:	gromacs-common = %{version}-%{release}
-
-# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed
-Obsoletes:	gromacs < 4.5.2-1 
 
 
 %description
@@ -54,10 +53,6 @@ renamed to g_mdrun.
 Summary:	GROMACS shared data and documentation
 Group:		Applications/Engineering
 BuildArch:	noarch
-# Due to switch to noarch package
-Obsoletes:	gromacs-common < 4.0.7-1
-# No more tutor package
-Obsoletes:	gromacs-tutor < 4.6-1
 
 %description common
 GROMACS is a versatile and extremely well optimized package to perform
@@ -108,8 +103,6 @@ Obsoletes:	gromacs-mpi < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
 BuildRequires:	openmpi-devel
 Requires:	openmpi
-# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed
-Obsoletes:	gromacs-openmpi < 4.5.3-2
 
 %description openmpi
 GROMACS is a versatile and extremely well optimized package to perform
@@ -236,8 +229,6 @@ Summary:	GROMACS bash completion
 Group:		Applications/Engineering
 Requires:	bash-completion
 BuildArch:	noarch
-# Due to switch to noarch package
-Obsoletes:	gromacs-bash < 4.0.7-1 
 
 
 %description bash
@@ -255,8 +246,6 @@ Summary:	GROMACS zsh support
 Group:		Applications/Engineering
 Requires:	zsh
 BuildArch:	noarch
-# Due to switch to noarch package
-Obsoletes:	gromacs-zsh < 4.0.7-1
 
 
 %description zsh
@@ -275,8 +264,6 @@ Summary:	GROMACS csh support
 Group:		Applications/Engineering
 Requires:	csh
 BuildArch:	noarch
-# Due to switch to noarch package
-Obsoletes:	gromacs-csh < 4.0.7-1 
 
 
 %description csh
@@ -385,9 +372,6 @@ cd ..
 
 
 %install
-rm -rf %{buildroot}
-
-
 ## Open MPI
 %if %{with_openmpi}
 %{_openmpi_load}
@@ -474,32 +458,28 @@ mv %{buildroot}%{_bindir}/completion.bash %{buildroot}/etc/bash_completion.d/gro
 mv %{buildroot}%{_bindir}/completion.csh . 
 
 # Remove .la files
-find %{buildroot} -name *.la -exec rm -rf {} \;
+find %{buildroot} -name *.la -delete
 
 # Get rid of executable stacks
+%ifnarch aarch64 ppc64le
 find %{buildroot} -name *.so.* -exec execstack -c {} \;
+%endif
 
 # Post install for libs. MPI packages don't need this.
 %post libs -p /sbin/ldconfig
 
 %postun libs -p /sbin/ldconfig
 
-%clean
-rm -rf %{buildroot}
-
 
 # Files section
 
 %files
-%defattr(-,root,root,-)
 %{_bindir}/g_*
 
 %files ngmx
-%defattr(-,root,root,-)
 %{_bindir}/ngmx*
 
 %files common
-%defattr(-,root,root,-)
 %doc AUTHORS COPYING README manual.pdf README.fedora
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
@@ -509,7 +489,6 @@ rm -rf %{buildroot}
 %exclude %{_datadir}/%{name}/template/
 
 %files libs
-%defattr(-,root,root,-)
 %{_libdir}/libgmx.so.*
 %{_libdir}/libgmx_d.so.*
 %{_libdir}/libgmxana.so.*
@@ -520,7 +499,6 @@ rm -rf %{buildroot}
 %{_libdir}/libmd_d.so.*
 
 %files devel
-%defattr(-,root,root,-)
 %{_includedir}/%{name}
 %{_libdir}/libgmx.so
 %{_libdir}/libgmx_d.so
@@ -536,46 +514,42 @@ rm -rf %{buildroot}
 
 %if %{with_openmpi}
 %files openmpi
-%defattr(-,root,root,-)
 %{_libdir}/openmpi/bin/g_mdrun*
 
 %files openmpi-libs
-%defattr(-,root,root,-)
 %{_libdir}/openmpi/lib/lib*.so.*
 
 %files openmpi-devel
-%defattr(-,root,root,-)
 %{_libdir}/openmpi/lib/lib*.so
 %endif
 
 %files mpich
-%defattr(-,root,root,-)
 %{_libdir}/mpich/bin/g_mdrun*
 
 %files mpich-libs
-%defattr(-,root,root,-)
 %{_libdir}/mpich/lib/lib*.so.*
 
 %files mpich-devel
-%defattr(-,root,root,-)
 %{_libdir}/mpich/lib/lib*.so
 
 %files zsh
-%defattr(-,root,root,-)
 %{_datadir}/zsh/site-functions/gromacs
 %{_bindir}/GMXRC.zsh
 
 %files bash
-%defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/bash_completion.d/gromacs
 
 %files csh
-%defattr(-,root,root,-)
 %doc completion.csh
 %{_bindir}/GMXRC.csh
 
 
 %changelog
+* Fri Jun 13 2014 Peter Robinson <pbrobinson@fedoraproject.org> 4.6.5-4
+- Fix builds on aarch64/ppc64le
+- Modernise spec
+- Remove ancient obsoletes
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.6.5-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
