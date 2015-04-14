@@ -5,8 +5,8 @@
 %endif
 
 Name:		gromacs
-Version:	4.6.5
-Release:	6%{?dist}
+Version:	5.0.4
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -17,19 +17,19 @@ Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
 Source6:	gromacs-README.fedora
 
 BuildRequires:	cmake
-BuildRequires:	atlas-devel
+BuildRequires:	atlas-devel >= 3.10.1
+BuildRequires:	boost-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
-BuildRequires:	lesstif-devel
+BuildRequires:	motif-devel
 # To get rid of executable stacks
 %ifnarch aarch64 ppc64le
 BuildRequires:	prelink
 %endif
-
 Requires:	gromacs-common = %{version}-%{release}
-
+Obsoletes:	gromacs-ngmx < 5.0.4-1
 
 %description
 GROMACS is a versatile and extremely well optimized package to perform
@@ -53,6 +53,8 @@ renamed to g_mdrun.
 Summary:	GROMACS shared data and documentation
 Group:		Applications/Engineering
 BuildArch:	noarch
+Provides:	gromacs-bash = %{version}-%{release}
+Obsoletes:	gromacs-bash < 5.0.4-1
 
 %description common
 GROMACS is a versatile and extremely well optimized package to perform
@@ -158,7 +160,6 @@ Summary:	GROMACS MPICH binaries and libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	mpich
-# Libs were branched from gromacs, so there are 64-bit installs that have 32-bit packages installed (at version 4.5.3-2)
 Provides:	%{name}-mpich2 = %{version}-%{release}
 Obsoletes:	gromacs-mpich2 < 4.6.3-2
 
@@ -210,36 +211,6 @@ and solid state physics.
 This package contains development libraries for GROMACS MPICH.
 You may need it if you want to write your own analysis programs.
 
-%package ngmx
-Summary:	GROMACS X11 visualization program
-Group:		Applications/Engineering
-
-%description ngmx
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package contains ngmx, the X11 visualization program.
-
-
-%package bash
-Summary:	GROMACS bash completion
-Group:		Applications/Engineering
-Requires:	bash-completion
-BuildArch:	noarch
-
-
-%description bash
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides bash completion for GROMACS.
-
 
 %package zsh
 Summary:	GROMACS zsh support
@@ -278,6 +249,7 @@ script.
 
 %prep
 %setup -q
+mkdir {serial,mpich,openmpi}{,_d}
 
 %build
 # Assembly kernels haven't got .note.GNU-stack sections
@@ -285,13 +257,23 @@ script.
 # Add noexecstack to compiler flags
 
 export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
-export LIBS="-L%{_libdir}/atlas -lblas -llapack"
+export LDFLAGS="-L%{_libdir}/atlas"
 
 # Default options, used for all compilations
-export DEFOPTS="-D BUILD_SHARED_LIBS=ON -DCMAKE_SKIP_RPATH:BOOL=ON -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON -DGMXLIB=%{_lib} -DGMX_X11=ON -DCMAKE_C_FLAGS_RELEASE= -DCMAKE_CXX_FLAGS_RELEASE="
-export SINGLE="-D GMX_DOUBLE=OFF" # Single precision
+export DEFOPTS="\
+ -DBUILD_SHARED_LIBS=ON \
+ -DBUILD_TESTING:BOOL=ON \
+ -DCMAKE_C_FLAGS_RELEASE= \
+ -DCMAKE_CXX_FLAGS_RELEASE= \
+ -DCMAKE_SKIP_RPATH:BOOL=ON \
+ -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \
+ -DGMX_BLAS_USER=satlas \
+ -DGMX_BUILD_UNITTESTS:BOOL=ON \
+ -DGMX_LAPACK_USER=satlas \
+ -DGMX_X11=ON \
+"
 export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
-export MPI="-D GMX_MPI=ON"
+export MPI="-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF"
 
 # Acceleration flag
 export CPUACC="None"
@@ -299,252 +281,200 @@ export CPUACC="None"
 %ifarch x86_64
 export CPUACC="SSE2"
 %endif
-export DEFOPTS+=" -DGMX_CPU_ACCELERATION=${CPUACC}"
+export DEFOPTS+=" -DGMX_SIMD=${CPUACC}"
 
-# Single precision
-mkdir single
-cd single
-%cmake $DEFOPTS $SINGLE ..
+for p in '' _d ; do
+cd serial${p}
+%cmake $DEFOPTS $(test -n "$p" && echo $DOUBLE) ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
+done
 
-# Double precision
-mkdir double
-cd double
-%cmake $DEFOPTS $DOUBLE ..
-make VERBOSE=1 %{?_smp_mflags}
-cd ..
-
-
-### MPI versions
-export CC=mpicc
-export CXX=mpicxx
-export F77=mpif77
-export F90=mpif90
-export FC=mpif90
-
-## Open MPI
 %if %{with_openmpi}
 %{_openmpi_load}
-# Suffix to be used for single precision is
-SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}"
-# single precision
-mkdir openmpi-single
-cd openmpi-single
-%cmake $DEFOPTS $SINGLE $MPI $SUFFIXCONF ..
-make VERBOSE=1 %{?_smp_mflags} mdrun
+for p in '' _d ; do
+SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
+cd openmpi${p}
+%cmake $DEFOPTS $MPI $SUFFIXCONF $(test -n "$p" && echo $DOUBLE) ..
+make VERBOSE=1 %{?_smp_mflags}
 cd ..
-
-# double precision
-# Suffix to be used for double precision is
-SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}_d"
-mkdir openmpi-double
-cd openmpi-double
-%cmake $DEFOPTS $DOUBLE $MPI $SUFFIXCONF ..
-make VERBOSE=1 %{?_smp_mflags} mdrun
-cd ..
-# unload
+done
 %{_openmpi_unload}
 %endif
 
-
-## MPICH
 %{_mpich_load}
-# Suffix to be used for single precision is
-SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}"
-# MPICH 2 is broken, so need to modify linker command
-export CC="mpicc -lstdc++"
-# single precision
-mkdir mpich-single
-cd mpich-single
-%cmake $DEFOPTS $SINGLE $MPI $SUFFIXCONF ..
-make VERBOSE=1 %{?_smp_mflags} mdrun
+for p in '' _d ; do
+SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
+cd mpich${p}
+%cmake $DEFOPTS $MPI $SUFFIXCONF $(test -n "$p" && echo $DOUBLE) ..
+make VERBOSE=1 %{?_smp_mflags}
 cd ..
-# double precision
-# Suffix to be used for double precision is
-SUFFIXCONF="-D GMX_DEFAULT_SUFFIX=OFF -D GMX_BINARY_SUFFIX=$SUFFIX -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}_d"
-mkdir mpich-double
-cd mpich-double
-%cmake $DEFOPTS $DOUBLE $MPI $SUFFIXCONF ..
-make VERBOSE=1 %{?_smp_mflags} mdrun
-cd ..
+done
 %{_mpich_unload}
 
 
 %install
-## Open MPI
 %if %{with_openmpi}
 %{_openmpi_load}
 # Make install-mdrun target is broken, do install manually
-mkdir -p %{buildroot}%{_libdir}/openmpi/{bin,lib}
-# single precision
-cd openmpi-single
-install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/openmpi/bin/g_mdrun_openmpi
-cp -a src/*/*.so* %{buildroot}%{_libdir}/openmpi/lib/
+mkdir -p %{buildroot}{$MPI_BIN,$MPI_LIB}
+for p in '' _d ; do
+cd openmpi${p}
+install -p -m 755 bin/gmx* %{buildroot}$MPI_BIN/
+cp -a lib/libgromacs${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
 cd ..
-# double precision
-cd openmpi-double
-install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/openmpi/bin/g_mdrun_openmpi_d
-cp -a src/*/*.so* %{buildroot}%{_libdir}/openmpi/lib/
-cd ..
+done
 %{_openmpi_unload}
 %endif
 
-## MPICH
 %{_mpich_load}
 # Make install-mdrun target is broken, do install manually
 mkdir -p %{buildroot}%{_libdir}/mpich/{bin,lib}
-# single precision
-cd mpich-single
-install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich/bin/g_mdrun_mpich
-cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich/lib/
+for p in '' _d ; do
+cd mpich${p}
+install -p -m 755 bin/gmx* %{buildroot}$MPI_BIN/
+cp -a lib/libgromacs${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
 cd ..
-# double precision
-cd mpich-double
-install -p -m 755 src/kernel/mdrun %{buildroot}%{_libdir}/mpich/bin/g_mdrun_mpich_d
-cp -a src/*/*.so* %{buildroot}%{_libdir}/mpich/lib/
-cd ..
+done
 %{_mpich_unload}
 
-
-## Serial versions
-
-# Single precision
-cd single
+for p in '' _d ; do
+cd serial${p}
 make DESTDIR=%{buildroot} INSTALL="install -p" install
 cd ..
-# Double precision
-cd double
-make DESTDIR=%{buildroot} INSTALL="install -p" install
-cd ..
-
-## Now, the rest of the necessary stuff
+done
 
 # Install manual & packager's note
 install -cpm 644 %{SOURCE1} manual.pdf
 install -cpm 644 %{SOURCE6} README.fedora
 
+pushd %{buildroot}
 # Fix GMXRC file permissions
-chmod a+x %{buildroot}%{_bindir}/GMXRC %{buildroot}%{_bindir}/GMXRC.*
+chmod a+x ./%{_bindir}/GMXRC ./%{_bindir}/GMXRC.*
 
-# Rename binaries and man pages to prevent clashes
+# Rename binaries to prevent clashes
 # (This is done here so that we don't need to mess with machine generated makefiles.
-#for bin in anadock do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp highway luck make_edi make_ndx mdrun mk_angndx ngmx pdb2gmx protonate sigeps tpbconv trjcat trjconv trjorder wheel x2top xpm2ps xrama ; do 
 for bin in do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp make_edi make_ndx mdrun mk_angndx pdb2gmx tpbconv trjcat trjconv trjorder xpm2ps; do
-mv %{buildroot}%{_bindir}/${bin} %{buildroot}%{_bindir}/g_${bin}
-mv %{buildroot}%{_bindir}/${bin}_d %{buildroot}%{_bindir}/g_${bin}_d
+for p in '' _d ; do
+mv ./%{_bindir}/${bin}${p} ./%{_bindir}/g_${bin}${p}
+done
 done
 
 for bin in demux.pl xplor2gmx.pl; do
-mv %{buildroot}%{_bindir}/$bin %{buildroot}%{_bindir}/g_${bin}
-done
-
-# Man pages
-#for bin in anadock do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp highway make_edi make_ndx mdrun mk_angndx ngmx pdb2gmx protonate sigeps tpbconv trjcat trjconv trjorder wheel x2top xpm2ps xrama ; do 
-for bin in do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp make_edi make_ndx mdrun mk_angndx pdb2gmx tpbconv trjcat trjconv trjorder xpm2ps; do
-mv %{buildroot}%{_mandir}/man1/${bin}.1 %{buildroot}%{_mandir}/man1/g_${bin}.1
-#mv %{buildroot}%{_mandir}/man1/${bin}_d.1 %{buildroot}%{_mandir}/man1/g_${bin}_d.1
+mv ./%{_bindir}/$bin ./%{_bindir}/g_${bin}
 done
 
 # Move completion files around
-chmod a-x %{buildroot}%{_bindir}/completion.*
-# Zsh
-mkdir -p %{buildroot}%{_datadir}/zsh/site-functions
-mv %{buildroot}%{_bindir}/completion.zsh %{buildroot}%{_datadir}/zsh/site-functions/gromacs
+chmod a-x ./%{_bindir}/gmx-completion*
 # Bash
-mkdir -p %{buildroot}%{_sysconfdir}/bash_completion.d
-mv %{buildroot}%{_bindir}/completion.bash %{buildroot}/etc/bash_completion.d/gromacs
-# Tcsh
-mv %{buildroot}%{_bindir}/completion.csh . 
+mkdir -p ./%{_sysconfdir}/bash_completion.d
+mv ./%{_bindir}/gmx-completion.bash ./etc/bash_completion.d/gmx-completion
+mv ./%{_bindir}/gmx-completion-gmx.bash ./etc/bash_completion.d/gmx-completion-gmx
+mv ./%{_bindir}/gmx-completion-gmx_d.bash ./etc/bash_completion.d/gmx-completion-gmx_d
 
 # Remove .la files
-find %{buildroot} -name *.la -delete
+find ./ -name *.la -delete
 
 # Get rid of executable stacks
 %ifnarch aarch64 ppc64le
-find %{buildroot} -name *.so.* -exec execstack -c {} \;
+find ./ -name *.so.* -exec execstack -c {} \;
 %endif
+popd
+
 
 # Post install for libs. MPI packages don't need this.
 %post libs -p /sbin/ldconfig
 
 %postun libs -p /sbin/ldconfig
 
+%if 1
+%check
+%if %{with_openmpi}
+%{_openmpi_load}
+for p in '' _d ; do
+  cd openmpi${p}
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
+  cd ..
+done
+%{_openmpi_unload}
+%endif
+%{_mpich_load}
+for p in '' _d ; do
+  cd mpich${p}
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
+  cd ..
+done
+%{_mpich_unload}
+for p in '' _d ; do
+  cd serial${p}
+  LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check
+  cd ..
+done
+%endif
 
-# Files section
 
 %files
+%{_bindir}/gmx*
 %{_bindir}/g_*
-
-%files ngmx
-%{_bindir}/ngmx*
 
 %files common
 %doc AUTHORS COPYING README manual.pdf README.fedora
+%config(noreplace) %{_sysconfdir}/bash_completion.d/gmx-completion*
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
-%{_mandir}/man1/*
-%{_mandir}/man7/gromacs.*
+%{_mandir}/man1/gmx*.1*
+%{_mandir}/man7/gromacs.7*
 %{_datadir}/%{name}/
-%exclude %{_datadir}/%{name}/template/
+%exclude %{_datadir}/%{name}/template
 
 %files libs
-%{_libdir}/libgmx.so.*
-%{_libdir}/libgmx_d.so.*
-%{_libdir}/libgmxana.so.*
-%{_libdir}/libgmxana_d.so.*
-%{_libdir}/libgmxpreprocess.so.*
-%{_libdir}/libgmxpreprocess_d.so.*
-%{_libdir}/libmd.so.*
-%{_libdir}/libmd_d.so.*
+%{_libdir}/libgromacs*.so.*
 
 %files devel
 %{_includedir}/%{name}
-%{_libdir}/libgmx.so
-%{_libdir}/libgmx_d.so
-%{_libdir}/libgmxana.so
-%{_libdir}/libgmxana_d.so
-%{_libdir}/libgmxpreprocess.so
-%{_libdir}/libgmxpreprocess_d.so
-%{_libdir}/libmd.so
-%{_libdir}/libmd_d.so
-%{_libdir}/pkgconfig/*.pc
-%{_datadir}/%{name}/template/
-%exclude %{_datadir}/%{name}/template/Makefile.mpi.*
+%{_libdir}/libgromacs*.so
+%{_libdir}/pkgconfig/libgromacs*.pc
+%{_datadir}/%{name}/template
 
 %if %{with_openmpi}
 %files openmpi
-%{_libdir}/openmpi/bin/g_mdrun*
+%{_libdir}/openmpi/bin/gmx*
 
 %files openmpi-libs
-%{_libdir}/openmpi/lib/lib*.so.*
+%{_libdir}/openmpi/lib/libgromacs_openmpi*.so.*
 
 %files openmpi-devel
-%{_libdir}/openmpi/lib/lib*.so
+%{_libdir}/openmpi/lib/libgromacs_openmpi*.so
 %endif
 
 %files mpich
-%{_libdir}/mpich/bin/g_mdrun*
+%{_libdir}/mpich/bin/gmx*
 
 %files mpich-libs
-%{_libdir}/mpich/lib/lib*.so.*
+%{_libdir}/mpich/lib/libgromacs_mpich*.so.*
 
 %files mpich-devel
-%{_libdir}/mpich/lib/lib*.so
+%{_libdir}/mpich/lib/libgromacs_mpich*.so
 
 %files zsh
-%{_datadir}/zsh/site-functions/gromacs
 %{_bindir}/GMXRC.zsh
 
-%files bash
-%config(noreplace) %{_sysconfdir}/bash_completion.d/gromacs
-
 %files csh
-%doc completion.csh
 %{_bindir}/GMXRC.csh
 
-
 %changelog
+* Tue Apr 14 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.4-1
+- update to 5.0.4
+- switch Motif library to original Motif (as it's in Fedora since long)
+- link against new-style atlas library (atlas 3.10.1+)
+- BR: boost-devel
+- csh/zsh completion removed upstream
+- move bash completion into main package
+- separate ngmx and mdrun dropped upstream
+- enable testsuite
+- factorize a lot of build logic
+- drop redundant comments
+
 * Mon Apr 13 2015 Dominik Mierzejewski <rpm@greysector.net> - 4.6.5-6
 - rebuilt for changed mpich libraries
 
