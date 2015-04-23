@@ -391,7 +391,12 @@ popd
 %check
 %if %{with_openmpi}
 %{_openmpi_load}
+# skip double precision tests on i686 (http://redmine.gromacs.org/issues/1716)
+%ifnarch i686
 for p in '' _d ; do
+%else
+for p in '' ; do
+%endif
   cd openmpi${p}
   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
@@ -399,13 +404,23 @@ done
 %{_openmpi_unload}
 %endif
 %{_mpich_load}
+# skip double precision tests on i686 (http://redmine.gromacs.org/issues/1716)
+%ifnarch i686
 for p in '' _d ; do
+%else
+for p in '' ; do
+%endif
   cd mpich${p}
   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
 done
 %{_mpich_unload}
+# skip double precision tests on i686 (http://redmine.gromacs.org/issues/1716)
+%ifnarch i686
 for p in '' _d ; do
+%else
+for p in '' ; do
+%endif
   cd serial${p}
   LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
@@ -474,6 +489,7 @@ done
 - enable testsuite
 - factorize a lot of build logic
 - drop redundant comments
+- skip double precision tests on i686 (http://redmine.gromacs.org/issues/1716)
 
 * Mon Apr 13 2015 Dominik Mierzejewski <rpm@greysector.net> - 4.6.5-6
 - rebuilt for changed mpich libraries
