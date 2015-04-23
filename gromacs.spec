@@ -15,6 +15,9 @@ URL:		http://www.gromacs.org
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
 Source6:	gromacs-README.fedora
+# disable only the failing tests on i686
+# http://redmine.gromacs.org/issues/1716
+Patch0:		gromacs-issue1716.patch
 
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
@@ -249,6 +252,9 @@ script.
 
 %prep
 %setup -q
+%ifarch i686
+%patch0 -p1 -b .issue1716
+%endif
 mkdir {serial,mpich,openmpi}{,_d}
 
 %build
@@ -391,12 +397,7 @@ popd
 %check
 %if %{with_openmpi}
 %{_openmpi_load}
-# skip double precision tests on i686 (http://redmine.gromacs.org/issues/1716)
-%ifnarch i686
 for p in '' _d ; do
-%else
-for p in '' ; do
-%endif
   cd openmpi${p}
   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
@@ -404,23 +405,13 @@ done
 %{_openmpi_unload}
 %endif
 %{_mpich_load}
-# skip double precision tests on i686 (http://redmine.gromacs.org/issues/1716)
-%ifnarch i686
 for p in '' _d ; do
-%else
-for p in '' ; do
-%endif
   cd mpich${p}
   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
 done
 %{_mpich_unload}
-# skip double precision tests on i686 (http://redmine.gromacs.org/issues/1716)
-%ifnarch i686
 for p in '' _d ; do
-%else
-for p in '' ; do
-%endif
   cd serial${p}
   LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
