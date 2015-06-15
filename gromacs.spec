@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	5.0.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -72,6 +72,7 @@ This package includes architecture independent data and HTML documentation.
 %package doc
 Summary:	GROMACS manual
 BuildArch:	noarch
+Obsoletes: gromacs-common < 5.0.5-2
 
 %description doc
 GROMACS is a versatile and extremely well optimized package to perform
@@ -487,6 +488,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Mon Jun 15 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.5-2
+- obsolete old -common subpackage in -doc so that users don't lose the manual
+
 * Sat Jun 13 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.5-1
 - update to 5.0.5
 - fix path to packaged dssp
