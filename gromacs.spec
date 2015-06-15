@@ -5,7 +5,7 @@
 %endif
 
 Name:		gromacs
-Version:	5.0.4
+Version:	5.0.5
 Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
@@ -15,9 +15,9 @@ URL:		http://www.gromacs.org
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
 Source6:	gromacs-README.fedora
-# disable only the failing tests on i686
-# http://redmine.gromacs.org/issues/1716
-Patch0:		gromacs-issue1716.patch
+# fix path to packaged dssp
+# https://bugzilla.redhat.com/show_bug.cgi?id=1203754
+Patch0:		gromacs-dssp-path.patch
 
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
@@ -66,7 +66,21 @@ It is developed for biomolecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
-This package includes architecture independent data and documentation.
+This package includes architecture independent data and HTML documentation.
+
+
+%package doc
+Summary:	GROMACS manual
+BuildArch:	noarch
+
+%description doc
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package the manual in PDF format.
 
 
 %package devel
@@ -252,9 +266,7 @@ script.
 
 %prep
 %setup -q
-%ifarch i686
-%patch0 -p1 -b .issue1716
-%endif
+%patch0 -p1 -b .dssp
 mkdir {serial,mpich,openmpi}{,_d}
 
 %build
@@ -350,9 +362,11 @@ make DESTDIR=%{buildroot} INSTALL="install -p" install
 cd ..
 done
 
+mkdir -p %{buildroot}%{_docdir}/gromacs
+install -pm 644 AUTHORS COPYING README %{buildroot}%{_docdir}/gromacs
 # Install manual & packager's note
-install -cpm 644 %{SOURCE1} manual.pdf
-install -cpm 644 %{SOURCE6} README.fedora
+install -cpm 644 %{SOURCE1} %{buildroot}%{_docdir}/gromacs/manual.pdf
+install -cpm 644 %{SOURCE6} %{buildroot}%{_docdir}/gromacs/README.fedora
 
 pushd %{buildroot}
 # Fix GMXRC file permissions
@@ -424,14 +438,18 @@ done
 %{_bindir}/g_*
 
 %files common
-%doc AUTHORS COPYING README manual.pdf README.fedora
+%{_docdir}/gromacs
+%exclude %{_docdir}/gromacs/manual.pdf
 %config(noreplace) %{_sysconfdir}/bash_completion.d/gmx-completion*
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
 %{_mandir}/man1/gmx*.1*
 %{_mandir}/man7/gromacs.7*
-%{_datadir}/%{name}/
+%{_datadir}/%{name}
 %exclude %{_datadir}/%{name}/template
+
+%files doc
+%{_docdir}/gromacs/manual.pdf
 
 %files libs
 %{_libdir}/libgromacs*.so.*
@@ -469,6 +487,12 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Sat Jun 13 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.5-1
+- update to 5.0.5
+- fix path to packaged dssp
+- drop upstreamed patch
+- move the large manual into a separate -doc subpackage
+
 * Tue Apr 14 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.4-1
 - update to 5.0.4
 - switch Motif library to original Motif (as it's in Fedora since long)

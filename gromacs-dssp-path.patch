@@ -1,0 +1,21 @@
+diff -up gromacs-5.0.5/src/gromacs/gmxana/gmx_do_dssp.c.dssp gromacs-5.0.5/src/gromacs/gmxana/gmx_do_dssp.c
+--- gromacs-5.0.5/src/gromacs/gmxana/gmx_do_dssp.c.dssp	2015-05-06 23:18:00.000000000 +0200
++++ gromacs-5.0.5/src/gromacs/gmxana/gmx_do_dssp.c	2015-06-14 01:10:16.556983504 +0200
+@@ -441,7 +441,7 @@ int gmx_do_dssp(int argc, char *argv[])
+         "calling the dssp program. If you do not have the dssp program,",
+         "get it from http://swift.cmbi.ru.nl/gv/dssp. [THISMODULE] assumes ",
+         "that the dssp executable is located in ",
+-        "[TT]/usr/local/bin/dssp[tt]. If this is not the case, then you should",
++        "[TT]/usr/bin/mkdssp[tt]. If this is not the case, then you should",
+         "set an environment variable [TT]DSSP[tt] pointing to the dssp",
+         "executable, e.g.: [PAR]",
+         "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
+@@ -586,7 +586,7 @@ int gmx_do_dssp(int argc, char *argv[])
+ 
+     if ((dptr = getenv("DSSP")) == NULL)
+     {
+-        dptr = "/usr/local/bin/dssp";
++        dptr = "/usr/bin/mkdssp";
+     }
+     if (!gmx_fexist(dptr))
+     {
