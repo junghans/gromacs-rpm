@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	5.0.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -488,6 +488,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Wed Jul 22 2015 David Tardon <dtardon@redhat.com> - 5.0.5-4
+- rebuild for Boost 1.58
+
 * Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 5.0.5-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
