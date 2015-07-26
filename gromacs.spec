@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	5.0.6
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -124,7 +124,6 @@ Obsoletes:	gromacs-mpi < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	gromacs-openmpi-libs = %{version}-%{release}
 BuildRequires:	openmpi-devel
-Requires:	openmpi
 
 %description openmpi
 GROMACS is a versatile and extremely well optimized package to perform
@@ -142,7 +141,6 @@ This package single and double precision binaries and libraries.
 Summary:	GROMACS Open MPI shared libraries
 Group:		System Environment/Libraries
 Obsoletes:	gromacs-mpi-libs < %{version}-%{release}
-Requires:	openmpi
 
 %description openmpi-libs
 GROMACS is a versatile and extremely well optimized package to perform
@@ -180,7 +178,6 @@ Summary:	GROMACS MPICH binaries and libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	gromacs-mpich-libs = %{version}-%{release}
-Requires:	mpich
 Provides:	%{name}-mpich2 = %{version}-%{release}
 Obsoletes:	gromacs-mpich2 < 4.6.3-2
 
@@ -198,7 +195,6 @@ This package single and double precision binaries and libraries.
 %package mpich-libs
 Summary:	GROMACS MPICH shared libraries
 Group:		System Environment/Libraries
-Requires:	mpich
 Provides:	%{name}-mpich2-libs = %{version}-%{release}
 Obsoletes:	%{name}-mpich2-libs < 4.6.3-2
 
@@ -491,6 +487,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Mon Aug 10 2015 Sandro Mani <manisandro@gmail.com> - 5.0.6-5
+- Rebuild for RPM MPI Requires Provides Change
+
 * Thu Aug 06 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.6-4
 - fix up dependencies between subpackages
 
