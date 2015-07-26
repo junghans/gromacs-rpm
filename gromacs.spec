@@ -5,8 +5,8 @@
 %endif
 
 Name:		gromacs
-Version:	5.0.5
-Release:	4%{?dist}
+Version:	5.0.6
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -488,6 +488,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Sun Jul 26 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.6-1
+- update to 5.0.6
+
 * Wed Jul 22 2015 David Tardon <dtardon@redhat.com> - 5.0.5-4
 - rebuild for Boost 1.58
 
