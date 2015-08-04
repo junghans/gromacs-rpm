@@ -29,7 +29,7 @@ BuildRequires:	libX11-devel
 BuildRequires:	motif-devel
 # To get rid of executable stacks
 %ifnarch aarch64 ppc64le
-BuildRequires:	prelink
+BuildRequires:	/usr/bin/execstack
 %endif
 Requires:	gromacs-common = %{version}-%{release}
 Obsoletes:	gromacs-ngmx < 5.0.4-1
