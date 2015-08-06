@@ -348,7 +348,7 @@ done
 
 %{_mpich_load}
 # Make install-mdrun target is broken, do install manually
-mkdir -p %{buildroot}%{_libdir}/mpich/{bin,lib}
+mkdir -p %{buildroot}{$MPI_BIN,$MPI_LIB}
 for p in '' _d ; do
 cd mpich${p}
 install -p -m 755 bin/gmx* %{buildroot}$MPI_BIN/
