@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	5.0.6
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -32,6 +32,7 @@ BuildRequires:	motif-devel
 BuildRequires:	/usr/bin/execstack
 %endif
 Requires:	gromacs-common = %{version}-%{release}
+Requires:	gromacs-libs = %{version}-%{release}
 Obsoletes:	gromacs-ngmx < 5.0.4-1
 
 %description
@@ -87,7 +88,7 @@ This package the manual in PDF format.
 %package devel
 Summary:	GROMACS header files and development libraries
 Group:		Applications/Engineering
-Requires:	gromacs = %{version}-%{release}
+Requires:	gromacs-libs = %{version}-%{release}
 
 %description devel
 GROMACS is a versatile and extremely well optimized package to perform
@@ -121,6 +122,7 @@ Summary:	GROMACS Open MPI binaries and libraries
 Group:		Applications/Engineering
 Obsoletes:	gromacs-mpi < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
+Requires:	gromacs-openmpi-libs = %{version}-%{release}
 BuildRequires:	openmpi-devel
 Requires:	openmpi
 
@@ -177,6 +179,7 @@ You may need it if you want to write your own analysis programs.
 Summary:	GROMACS MPICH binaries and libraries
 Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
+Requires:	gromacs-mpich-libs = %{version}-%{release}
 Requires:	mpich
 Provides:	%{name}-mpich2 = %{version}-%{release}
 Obsoletes:	gromacs-mpich2 < 4.6.3-2
@@ -488,6 +491,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Thu Aug 26 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.6-4
+- fix up dependencies between subpackages
+
 * Thu Aug 06 2015 Jonathan Wakely <jwakely@redhat.com> 5.0.6-3
 - Rebuilt for Boost 1.58
 
