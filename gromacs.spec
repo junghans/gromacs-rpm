@@ -491,7 +491,7 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
-* Thu Aug 26 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.6-4
+* Thu Aug 06 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.0.6-4
 - fix up dependencies between subpackages
 
 * Thu Aug 06 2015 Jonathan Wakely <jwakely@redhat.com> 5.0.6-3
