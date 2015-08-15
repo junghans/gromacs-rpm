@@ -6,7 +6,7 @@
 
 Name:		gromacs
 Version:	5.0.6
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 Group:		Applications/Engineering
 License:	GPLv2+
@@ -487,6 +487,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Sat Aug 15 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 5.0.6-6
+- Rebuild for MPI provides
+
 * Mon Aug 10 2015 Sandro Mani <manisandro@gmail.com> - 5.0.6-5
 - Rebuild for RPM MPI Requires Provides Change
 
