@@ -5,10 +5,9 @@
 %endif
 
 Name:		gromacs
-Version:	5.0.6
-Release:	6%{?dist}
+Version:	5.1
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
-Group:		Applications/Engineering
 License:	GPLv2+
 URL:		http://www.gromacs.org
 
@@ -55,7 +54,6 @@ renamed to g_mdrun.
 
 %package common
 Summary:	GROMACS shared data and documentation
-Group:		Applications/Engineering
 BuildArch:	noarch
 Provides:	gromacs-bash = %{version}-%{release}
 Obsoletes:	gromacs-bash < 5.0.4-1
@@ -87,8 +85,8 @@ This package the manual in PDF format.
 
 %package devel
 Summary:	GROMACS header files and development libraries
-Group:		Applications/Engineering
 Requires:	gromacs-libs = %{version}-%{release}
+Requires:	cmake
 
 %description devel
 GROMACS is a versatile and extremely well optimized package to perform
@@ -104,7 +102,6 @@ programs.
 
 %package libs
 Summary:	GROMACS shared libraries
-Group:		System Environment/Libraries
 
 %description libs
 GROMACS is a versatile and extremely well optimized package to perform
@@ -119,8 +116,6 @@ This package contains libraries needed for operation of GROMACS.
 %if %{with_openmpi}
 %package openmpi
 Summary:	GROMACS Open MPI binaries and libraries
-Group:		Applications/Engineering
-Obsoletes:	gromacs-mpi < %{version}-%{release}
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	gromacs-openmpi-libs = %{version}-%{release}
 BuildRequires:	openmpi-devel
@@ -139,8 +134,6 @@ This package single and double precision binaries and libraries.
 
 %package openmpi-libs
 Summary:	GROMACS Open MPI shared libraries
-Group:		System Environment/Libraries
-Obsoletes:	gromacs-mpi-libs < %{version}-%{release}
 
 %description openmpi-libs
 GROMACS is a versatile and extremely well optimized package to perform
@@ -154,10 +147,9 @@ This package contains libraries needed for operation of GROMACS Open MPI.
 
 %package openmpi-devel
 Summary:	GROMACS Open MPI development libraries
-Group:		Applications/Engineering
-Obsoletes:	gromacs-mpi-devel < %{version}-%{release}
 Requires:	gromacs-devel = %{version}-%{release}
 Requires:	gromacs-openmpi = %{version}-%{release}
+BuildRequires:	openmpi-devel
 Requires:	openmpi-devel
 
 
@@ -175,11 +167,8 @@ You may need it if you want to write your own analysis programs.
 
 %package mpich
 Summary:	GROMACS MPICH binaries and libraries
-Group:		Applications/Engineering
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	gromacs-mpich-libs = %{version}-%{release}
-Provides:	%{name}-mpich2 = %{version}-%{release}
-Obsoletes:	gromacs-mpich2 < 4.6.3-2
 
 %description mpich
 GROMACS is a versatile and extremely well optimized package to perform
@@ -194,9 +183,6 @@ This package single and double precision binaries and libraries.
 
 %package mpich-libs
 Summary:	GROMACS MPICH shared libraries
-Group:		System Environment/Libraries
-Provides:	%{name}-mpich2-libs = %{version}-%{release}
-Obsoletes:	%{name}-mpich2-libs < 4.6.3-2
 
 %description mpich-libs
 GROMACS is a versatile and extremely well optimized package to perform
@@ -210,13 +196,10 @@ This package contains libraries needed for operation of GROMACS MPICH.
 
 %package mpich-devel
 Summary:	GROMACS MPICH development libraries
-Group:		Applications/Engineering
 Requires:	gromacs-devel = %{version}-%{release}
 Requires:	gromacs-mpich = %{version}-%{release}
 BuildRequires:	mpich-devel
 Requires:	mpich-devel
-Provides:	%{name}-mpich2-devel = %{version}-%{release}
-Obsoletes:	%{name}-mpich2-devel < 4.6.3-2
 
 %description mpich-devel
 GROMACS is a versatile and extremely well optimized package to perform
@@ -231,7 +214,6 @@ You may need it if you want to write your own analysis programs.
 
 %package zsh
 Summary:	GROMACS zsh support
-Group:		Applications/Engineering
 Requires:	zsh
 BuildArch:	noarch
 
@@ -249,7 +231,6 @@ completion.
 
 %package csh
 Summary:	GROMACS csh support
-Group:		Applications/Engineering
 Requires:	csh
 BuildArch:	noarch
 
@@ -291,10 +272,10 @@ export DEFOPTS="\
  -DGMX_X11=ON \
 "
 export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
-export MPI="-DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF"
+export MPI="-DGMX_BUILD_MDRUN_ONLY=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF"
 
 # Acceleration flag
-export CPUACC="None"
+export CPUACC="Reference"
 # .. but on x86_64 we know that SSE2 is available always, so
 %ifarch x86_64
 export CPUACC="SSE2"
@@ -338,8 +319,8 @@ done
 mkdir -p %{buildroot}{$MPI_BIN,$MPI_LIB}
 for p in '' _d ; do
 cd openmpi${p}
-install -p -m 755 bin/gmx* %{buildroot}$MPI_BIN/
-cp -a lib/libgromacs${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
+install -p -m 755 bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/
+cp -a lib/libgromacs_mdrun${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
 cd ..
 done
 %{_openmpi_unload}
@@ -350,8 +331,8 @@ done
 mkdir -p %{buildroot}{$MPI_BIN,$MPI_LIB}
 for p in '' _d ; do
 cd mpich${p}
-install -p -m 755 bin/gmx* %{buildroot}$MPI_BIN/
-cp -a lib/libgromacs${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
+install -p -m 755 bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/
+cp -a lib/libgromacs_mdrun${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
 cd ..
 done
 %{_mpich_unload}
@@ -371,14 +352,6 @@ install -cpm 644 %{SOURCE6} %{buildroot}%{_docdir}/gromacs/README.fedora
 pushd %{buildroot}
 # Fix GMXRC file permissions
 chmod a+x ./%{_bindir}/GMXRC ./%{_bindir}/GMXRC.*
-
-# Rename binaries to prevent clashes
-# (This is done here so that we don't need to mess with machine generated makefiles.
-for bin in do_dssp editconf eneconv genbox genconf genion genrestr gmxcheck gmxdump grompp make_edi make_ndx mdrun mk_angndx pdb2gmx tpbconv trjcat trjconv trjorder xpm2ps; do
-for p in '' _d ; do
-mv ./%{_bindir}/${bin}${p} ./%{_bindir}/g_${bin}${p}
-done
-done
 
 for bin in demux.pl xplor2gmx.pl; do
 mv ./%{_bindir}/$bin ./%{_bindir}/g_${bin}
@@ -444,7 +417,6 @@ done
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
 %{_mandir}/man1/gmx*.1*
-%{_mandir}/man7/gromacs.7*
 %{_datadir}/%{name}
 %exclude %{_datadir}/%{name}/template
 
@@ -459,26 +431,27 @@ done
 %{_libdir}/libgromacs*.so
 %{_libdir}/pkgconfig/libgromacs*.pc
 %{_datadir}/%{name}/template
+%{_datadir}/cmake/gromacs*
 
 %if %{with_openmpi}
 %files openmpi
-%{_libdir}/openmpi/bin/gmx*
+%{_libdir}/openmpi/bin/mdrun_openmpi*
 
 %files openmpi-libs
-%{_libdir}/openmpi/lib/libgromacs_openmpi*.so.*
+%{_libdir}/openmpi/lib/libgromacs_mdrun_openmpi*.so.*
 
 %files openmpi-devel
-%{_libdir}/openmpi/lib/libgromacs_openmpi*.so
+%{_libdir}/openmpi/lib/libgromacs_mdrun_openmpi*.so
 %endif
 
 %files mpich
-%{_libdir}/mpich/bin/gmx*
+%{_libdir}/mpich/bin/mdrun_mpich*
 
 %files mpich-libs
-%{_libdir}/mpich/lib/libgromacs_mpich*.so.*
+%{_libdir}/mpich/lib/libgromacs_mdrun_mpich*.so.*
 
 %files mpich-devel
-%{_libdir}/mpich/lib/libgromacs_mpich*.so
+%{_libdir}/mpich/lib/libgromacs_mdrun_mpich*.so
 
 %files zsh
 %{_bindir}/GMXRC.zsh
@@ -487,6 +460,13 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Sat Aug 15 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-1
+- update to 5.1
+- drop ancient Obsoletes:/Provides:
+- drop Group: tags
+- build mdrun-only MPI binaries again
+- use Reference instead of None for non-SSE2 builds (should be faster)
+
 * Sat Aug 15 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 5.0.6-6
 - Rebuild for MPI provides
 
