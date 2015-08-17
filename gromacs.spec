@@ -3,6 +3,15 @@
 %else
 %global with_openmpi 0
 %endif
+%global execstack_excludearch aarch64 ppc64 ppc64le s390 s390x
+
+%global simd None
+%ifarch x86_64
+%global simd SSE2
+%endif
+%ifarch ppc64 ppc64le
+%global simd IBM_VSX
+%endif
 
 Name:		gromacs
 Version:	5.1
@@ -27,7 +36,7 @@ BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 BuildRequires:	motif-devel
 # To get rid of executable stacks
-%ifnarch aarch64 ppc64le
+%ifnarch %{execstack_excludearch}
 BuildRequires:	/usr/bin/execstack
 %endif
 Requires:	gromacs-common = %{version}-%{release}
@@ -269,25 +278,11 @@ export DEFOPTS="\
  -DGMX_BLAS_USER=satlas \
  -DGMX_BUILD_UNITTESTS:BOOL=ON \
  -DGMX_LAPACK_USER=satlas \
+ -DGMX_SIMD=%{simd} \
  -DGMX_X11=ON \
 "
 export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
 export MPI="-DGMX_BUILD_MDRUN_ONLY=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF"
-
-# Acceleration flag
-export CPUACC="Reference"
-# .. but on x86_64 we know that SSE2 is available always, so
-%ifarch x86_64
-export CPUACC="SSE2"
-%endif
-export DEFOPTS+=" -DGMX_SIMD=${CPUACC}"
-
-for p in '' _d ; do
-cd serial${p}
-%cmake $DEFOPTS $(test -n "$p" && echo $DOUBLE) ..
-make VERBOSE=1 %{?_smp_mflags}
-cd ..
-done
 
 %if %{with_openmpi}
 %{_openmpi_load}
@@ -310,6 +305,13 @@ make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
 %{_mpich_unload}
+
+for p in '' _d ; do
+cd serial${p}
+%cmake $DEFOPTS -DGMX_SIMD=%{simd} $(test -n "$p" && echo $DOUBLE) ..
+make VERBOSE=1 %{?_smp_mflags}
+cd ..
+done
 
 
 %install
@@ -369,7 +371,7 @@ mv ./%{_bindir}/gmx-completion-gmx_d.bash ./etc/bash_completion.d/gmx-completion
 find ./ -name *.la -delete
 
 # Get rid of executable stacks
-%ifnarch aarch64 ppc64le
+%ifnarch %{execstack_excludearch}
 find ./ -name *.so.* -exec execstack -c {} \;
 %endif
 popd
@@ -384,23 +386,39 @@ popd
 %check
 %if %{with_openmpi}
 %{_openmpi_load}
+# testsuite doesn't compile with double precision on ppc64(le) with VSX: http://redmine.gromacs.org/issues/1808
+%ifnarch ppc64 ppc64le
 for p in '' _d ; do
+%else
+for p in '' ; do
+%endif
   cd openmpi${p}
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check || cat Testing/Temporary/LastTest*.log
   cd ..
 done
 %{_openmpi_unload}
 %endif
 %{_mpich_load}
+# testsuite doesn't compile with double precision on ppc64(le) with VSX: http://redmine.gromacs.org/issues/1808
+%ifnarch ppc64 ppc64le
 for p in '' _d ; do
+%else
+for p in '' ; do
+%endif
   cd mpich${p}
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check || cat Testing/Temporary/LastTest*.log
   cd ..
 done
 %{_mpich_unload}
+# testsuite doesn't compile with double precision on ppc64(le) with VSX: http://redmine.gromacs.org/issues/1808
+# s390 has too little memory to run the testsuite with double precision
+%ifnarch ppc64 ppc64le s390
 for p in '' _d ; do
+%else
+for p in '' ; do
+%endif
   cd serial${p}
-  LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check
+  LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check || cat Testing/Temporary/LastTest*.log
   cd ..
 done
 %endif
@@ -465,7 +483,10 @@ done
 - drop ancient Obsoletes:/Provides:
 - drop Group: tags
 - build mdrun-only MPI binaries again
-- use Reference instead of None for non-SSE2 builds (should be faster)
+- simplify SIMD enablement handling
+- enable SIMD on ppc64(le)
+- no execstack on ppc64 or s390(x), either
+- output testsuite logs upon failure
 
 * Sat Aug 15 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 5.0.6-6
 - Rebuild for MPI provides
