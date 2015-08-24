@@ -9,13 +9,26 @@
 %ifarch x86_64
 %global simd SSE2
 %endif
-%ifarch ppc64 ppc64le
+# doesn't compile at the moment due to usage of vec_mul which is VSX-only
+# http://redmine.gromacs.org/issues/1812
+# also, not all Fedora-supported CPUs have AltiVec
+%ifarch ppc64
+#%%global simd IBM_VMX
+%endif
+%ifarch ppc64le
 %global simd IBM_VSX
+%endif
+# not all Fedora-supported CPUs have NEON
+%ifarch armv7hl
+#%%global simd ARM_NEON
+%endif
+%ifarch aarch64
+%global simd ARM_NEON_ASIMD
 %endif
 
 Name:		gromacs
 Version:	5.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -26,6 +39,9 @@ Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
+# fix compilation on ppc64(le) with VSX SIMD
+# http://redmine.gromacs.org/issues/1808
+Patch1:		gromacs-vsx.patch
 
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
@@ -257,6 +273,7 @@ script.
 %prep
 %setup -q
 %patch0 -p1 -b .dssp
+%patch1 -p1 -b .vsx
 mkdir {serial,mpich,openmpi}{,_d}
 
 %build
@@ -386,39 +403,28 @@ popd
 %check
 %if %{with_openmpi}
 %{_openmpi_load}
-# testsuite doesn't compile with double precision on ppc64(le) with VSX: http://redmine.gromacs.org/issues/1808
-%ifnarch ppc64 ppc64le
 for p in '' _d ; do
-%else
-for p in '' ; do
-%endif
   cd openmpi${p}
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check || cat Testing/Temporary/LastTest*.log
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
 done
 %{_openmpi_unload}
 %endif
 %{_mpich_load}
-# testsuite doesn't compile with double precision on ppc64(le) with VSX: http://redmine.gromacs.org/issues/1808
-%ifnarch ppc64 ppc64le
 for p in '' _d ; do
-%else
-for p in '' ; do
-%endif
   cd mpich${p}
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check || cat Testing/Temporary/LastTest*.log
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
 done
 %{_mpich_unload}
-# testsuite doesn't compile with double precision on ppc64(le) with VSX: http://redmine.gromacs.org/issues/1808
 # s390 has too little memory to run the testsuite with double precision
-%ifnarch ppc64 ppc64le s390
+%ifnarch s390
 for p in '' _d ; do
 %else
 for p in '' ; do
 %endif
   cd serial${p}
-  LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check || cat Testing/Temporary/LastTest*.log
+  LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
 done
 %endif
@@ -478,6 +484,12 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Wed Aug 19 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-2
+- enable NEON SIMD on aarch64
+- fix compilation of VSX code with double precision on ppc64le
+- enable VSX on ppc64le only
+- don't manually output testuite logs upon failure, ctest does that already
+
 * Sat Aug 15 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-1
 - update to 5.1
 - drop ancient Obsoletes:/Provides:

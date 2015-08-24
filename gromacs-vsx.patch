@@ -1,0 +1,41 @@
+diff -up gromacs-5.1/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx.h.vsx gromacs-5.1/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx.h
+--- gromacs-5.1/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx.h.vsx	2015-08-13 13:48:09.000000000 +0200
++++ gromacs-5.1/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx.h	2015-08-24 10:07:34.819414371 +0200
+@@ -260,7 +260,7 @@
+ #define gmx_simd_min_d(a, b)       vec_min(a, b)
+ #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+ /* gcc up to at least version 4.9 does not support vec_round() in double precision. */
+-#    define gmx_simd_round_d(a)    ({ __vector double res; __asm__ ("xvrdpi %0,%1" : "=ww" (res) : "ww" ((__vector double) (a))); res; })
++#    define gmx_simd_round_d(a)    ({ __vector double res; __asm__ ("xvrdpi %x0,%x1" : "=wd" (res) : "wd" ((__vector double) (a))); res; })
+ #else
+ /* IBM xlC */
+ #    define gmx_simd_round_d(a)    vec_round(a)
+@@ -334,8 +334,8 @@
+ 
+ #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+ /* gcc-4.9 is missing double-to-float/float-to-double conversions. */
+-#    define gmx_vsx_f2d(x) ({ __vector double res; __asm__ ("xvcvspdp %0,%1" : "=ww" (res) : "ww" ((__vector float) (x))); res; })
+-#    define gmx_vsx_d2f(x) ({ __vector float res; __asm__ ("xvcvdpsp %0,%1" : "=ww" (res) : "ww" ((__vector double) (x))); res; })
++#    define gmx_vsx_f2d(x) ({ __vector double res; __asm__ ("xvcvspdp %x0,%x1" : "=wd" (res) : "wf" ((__vector float) (x))); res; })
++#    define gmx_vsx_d2f(x) ({ __vector float res; __asm__ ("xvcvdpsp %x0,%x1" : "=wf" (res) : "wd" ((__vector double) (x))); res; })
+ #else
+ /* f2d and d2f are indeed identical on xlC; it is selected by the argument and result type. */
+ #    define gmx_vsx_f2d(x)       vec_cvf(x)
+@@ -438,7 +438,7 @@ gmx_simd_cvtt_d2i_ibm_vsx(gmx_simd_doubl
+     const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+     gmx_simd_dint32_t            ix;
+ 
+-    __asm__ ("xvcvdpsxws %0,%1" : "=ww" (ix) : "ww" ((__vector double) (x)));
++    __asm__ ("xvcvdpsxws %x0,%x1" : "=wa" (ix) : "wd" (x));
+ 
+     return vec_perm(ix, ix, perm);
+ }
+@@ -449,7 +449,7 @@ gmx_simd_cvt_i2d_ibm_vsx(gmx_simd_dint32
+     const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+     gmx_simd_double_t            x;
+     ix = vec_perm(ix, ix, perm);
+-    __asm__ ("xvcvsxwdp %0,%1" : "=ww" (x) : "ww" ((__vector signed int) (ix)));
++    __asm__ ("xvcvsxwdp %x0,%x1" : "=wd" (x) : "wa" (ix));
+     return x;
+ }
+ #endif
