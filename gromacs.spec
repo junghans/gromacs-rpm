@@ -28,7 +28,7 @@
 
 Name:		gromacs
 Version:	5.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -484,6 +484,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Thu Aug 27 2015 Jonathan Wakely <jwakely@redhat.com> - 5.1-3
+- Rebuilt for Boost 1.59
+
 * Wed Aug 19 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-2
 - enable NEON SIMD on aarch64
 - fix compilation of VSX code with double precision on ppc64le
