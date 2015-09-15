@@ -28,7 +28,7 @@
 
 Name:		gromacs
 Version:	5.1
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -484,6 +484,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Tue Sep 15 2015 Orion Poplawski <orion@cora.nwra.com> - 5.1-4
+- Rebuild for openmpi 1.10.0
+
 * Thu Aug 27 2015 Jonathan Wakely <jwakely@redhat.com> - 5.1-3
 - Rebuilt for Boost 1.59
 
