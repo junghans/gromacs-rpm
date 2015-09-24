@@ -28,7 +28,7 @@
 
 Name:		gromacs
 Version:	5.1
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -42,9 +42,6 @@ Patch0:		gromacs-dssp-path.patch
 # fix compilation on ppc64(le) with VSX SIMD
 # http://redmine.gromacs.org/issues/1808
 Patch1:		gromacs-vsx.patch
-# disable HandlesPermuteModifier test which fails randomly on i686
-# http://redmine.gromacs.org/issues/1817
-Patch2:		gromacs-test.patch
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	boost-devel
@@ -276,9 +273,6 @@ script.
 %setup -q
 %patch0 -p1 -b .dssp
 %patch1 -p1 -b .vsx
-%ifarch i686
-%patch2 -p1 -b .test
-%endif
 mkdir {serial,mpich,openmpi}{,_d}
 
 %build
@@ -293,8 +287,6 @@ export LDFLAGS="-L%{_libdir}/atlas"
 export DEFOPTS="\
  -DBUILD_SHARED_LIBS=ON \
  -DBUILD_TESTING:BOOL=ON \
- -DCMAKE_C_FLAGS_RELEASE= \
- -DCMAKE_CXX_FLAGS_RELEASE= \
  -DCMAKE_SKIP_RPATH:BOOL=ON \
  -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \
  -DGMX_BLAS_USER=satlas \
@@ -489,6 +481,10 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Wed Sep 23 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-6
+- don't remove -DNDEBUG from CFLAGS (makes HandlesPermuteModifier test fail
+  randomly)
+
 * Tue Sep 22 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-5
 - disable HandlesPermuteModifier test which fails randomly on i686
 
