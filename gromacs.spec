@@ -284,26 +284,26 @@ export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
 export LDFLAGS="-L%{_libdir}/atlas"
 
 # Default options, used for all compilations
-export DEFOPTS="\
- -DBUILD_SHARED_LIBS=ON \
- -DBUILD_TESTING:BOOL=ON \
- -DCMAKE_SKIP_RPATH:BOOL=ON \
- -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \
- -DGMX_BLAS_USER=satlas \
- -DGMX_BUILD_UNITTESTS:BOOL=ON \
- -DGMX_LAPACK_USER=satlas \
- -DGMX_SIMD=%{simd} \
- -DGMX_X11=ON \
-"
-export DOUBLE="-D GMX_DOUBLE=ON" # Double precision
-export MPI="-DGMX_BUILD_MDRUN_ONLY=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF"
+%global defopts \\\
+ -DBUILD_SHARED_LIBS=ON \\\
+ -DBUILD_TESTING:BOOL=ON \\\
+ -DCMAKE_SKIP_RPATH:BOOL=ON \\\
+ -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \\\
+ -DGMX_BLAS_USER=satlas \\\
+ -DGMX_BUILD_UNITTESTS:BOOL=ON \\\
+ -DGMX_LAPACK_USER=satlas \\\
+ -DGMX_SIMD=%{simd} \\\
+ -DGMX_X11=ON
+
+%global double -DGMX_DOUBLE=ON
+%global mpi -DGMX_BUILD_MDRUN_ONLY=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF
 
 %if %{with_openmpi}
 %{_openmpi_load}
 for p in '' _d ; do
 SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
 cd openmpi${p}
-%cmake $DEFOPTS $MPI $SUFFIXCONF $(test -n "$p" && echo $DOUBLE) ..
+%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double}) ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -314,7 +314,7 @@ done
 for p in '' _d ; do
 SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
 cd mpich${p}
-%cmake $DEFOPTS $MPI $SUFFIXCONF $(test -n "$p" && echo $DOUBLE) ..
+%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double}) ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -322,7 +322,7 @@ done
 
 for p in '' _d ; do
 cd serial${p}
-%cmake $DEFOPTS -DGMX_SIMD=%{simd} $(test -n "$p" && echo $DOUBLE) ..
+%cmake %{defopts} $SUFFIXCONF $(test -n "$p" && echo %{double}) ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -484,6 +484,7 @@ done
 * Wed Sep 23 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-6
 - don't remove -DNDEBUG from CFLAGS (makes HandlesPermuteModifier test fail
   randomly)
+- convert shell variables to rpm macros
 
 * Tue Sep 22 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-5
 - disable HandlesPermuteModifier test which fails randomly on i686
