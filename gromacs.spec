@@ -4,7 +4,7 @@
 %global with_openmpi 0
 %endif
 %global execstack_excludearch aarch64 ppc64 ppc64le s390 s390x
-%global opencl_arches i686 x86_64
+%global opencl_excludearch aarch64 armv7hl ppc64 ppc64le s390 s390x
 
 %global simd None
 %ifarch x86_64
@@ -53,7 +53,7 @@ BuildRequires:	gsl-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 BuildRequires:	motif-devel
-%ifarch %{opencl_arches}
+%ifnarch %{opencl_excludearch}
 BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
 # use CPU-based OpenCL implementation for build
@@ -104,7 +104,6 @@ This package includes architecture independent data and HTML documentation.
 
 %package opencl
 Summary:	GROMACS OpenCL kernels
-ExclusiveArch:	%{opencl_arches}
 # suggest installing a GPU-based OpenCL implementation
 Suggests:	beignet
 Suggests:	mesa-libOpenCL
@@ -224,7 +223,7 @@ You may need it if you want to write your own analysis programs.
 %package mpich
 Summary:	GROMACS MPICH binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
-%ifarch %{opencl_arches}
+%ifnarch %{opencl_excludearch}
 Requires:	gromacs-opencl = %{version}-%{release}
 %endif
 Requires:	gromacs-mpich-libs = %{version}-%{release}
@@ -308,7 +307,7 @@ script.
 %setup -q
 %patch0 -p1 -b .dssp
 %patch1 -p1 -b .vsx
-%ifarch %{opencl_arches}
+%ifnarch %{opencl_excludearch}
 %patch2 -p1 -b .opencl
 %endif
 mkdir {serial,mpich,openmpi}{,_d}
@@ -333,7 +332,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DGMX_SIMD=%{simd} \\\
  -DGMX_X11=ON
 
-%ifarch %{opencl_arches}
+%ifnarch %{opencl_excludearch}
 # OpenCL is available for single precision only
 %global single -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
 %endif
@@ -484,8 +483,10 @@ done
 %exclude %{_datadir}/%{name}/template
 %exclude %{_datadir}/%{name}/opencl
 
+%ifnarch %{opencl_excludearch}
 %files opencl
 %{_datadir}/%{name}/opencl
+%endif
 
 %files doc
 %{_docdir}/gromacs/manual.pdf
