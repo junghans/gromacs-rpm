@@ -4,6 +4,7 @@
 %global with_openmpi 0
 %endif
 %global execstack_excludearch aarch64 ppc64 ppc64le s390 s390x
+%global opencl_arches i686 x86_64
 
 %global simd None
 %ifarch x86_64
@@ -42,6 +43,8 @@ Patch0:		gromacs-dssp-path.patch
 # fix compilation on ppc64(le) with VSX SIMD
 # http://redmine.gromacs.org/issues/1808
 Patch1:		gromacs-vsx.patch
+# fix gmxManageOpenCL.cmake syntax error and MPI tests
+Patch2:		gromacs-opencl.patch
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	boost-devel
@@ -50,6 +53,13 @@ BuildRequires:	gsl-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 BuildRequires:	motif-devel
+%ifarch %{opencl_arches}
+BuildRequires:	ocl-icd-devel
+BuildRequires:	opencl-headers
+# use CPU-based OpenCL implementation for build
+BuildRequires:	pocl
+Requires:	gromacs-opencl = %{version}-%{release}
+%endif
 # To get rid of executable stacks
 %ifnarch %{execstack_excludearch}
 BuildRequires:	/usr/bin/execstack
@@ -90,6 +100,25 @@ performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
 This package includes architecture independent data and HTML documentation.
+
+
+%package opencl
+Summary:	GROMACS OpenCL kernels
+ExclusiveArch:	%{opencl_arches}
+# suggest installing a GPU-based OpenCL implementation
+Suggests:	beignet
+Suggests:	mesa-libOpenCL
+# or at least a CPU-based one
+Suggests:	pocl
+
+%description opencl
+GROMACS is a versatile and extremely well optimized package to perform
+molecular dynamics computer simulations and subsequent trajectory analysis.
+It is developed for biomolecules like proteins, but the extremely high
+performance means it is used also in several other field like polymer chemistry
+and solid state physics.
+
+This package includes the OpenCL kernels.
 
 
 %package doc
@@ -141,6 +170,9 @@ This package contains libraries needed for operation of GROMACS.
 %package openmpi
 Summary:	GROMACS Open MPI binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
+%ifarch %{opencl_arches}
+Requires:	gromacs-opencl = %{version}-%{release}
+%endif
 Requires:	gromacs-openmpi-libs = %{version}-%{release}
 BuildRequires:	openmpi-devel
 
@@ -192,6 +224,9 @@ You may need it if you want to write your own analysis programs.
 %package mpich
 Summary:	GROMACS MPICH binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
+%ifarch %{opencl_arches}
+Requires:	gromacs-opencl = %{version}-%{release}
+%endif
 Requires:	gromacs-mpich-libs = %{version}-%{release}
 
 %description mpich
@@ -273,6 +308,9 @@ script.
 %setup -q
 %patch0 -p1 -b .dssp
 %patch1 -p1 -b .vsx
+%ifarch %{opencl_arches}
+%patch2 -p1 -b .opencl
+%endif
 mkdir {serial,mpich,openmpi}{,_d}
 
 %build
@@ -295,6 +333,10 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DGMX_SIMD=%{simd} \\\
  -DGMX_X11=ON
 
+%ifarch %{opencl_arches}
+# OpenCL is available for single precision only
+%global single -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+%endif
 %global double -DGMX_DOUBLE=ON
 %global mpi -DGMX_BUILD_MDRUN_ONLY=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF
 
@@ -303,7 +345,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
 for p in '' _d ; do
 SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
 cd openmpi${p}
-%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double}) ..
+%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double} || echo %{?single}) ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -314,7 +356,7 @@ done
 for p in '' _d ; do
 SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
 cd mpich${p}
-%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double}) ..
+%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double} || echo %{?single}) ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -322,7 +364,7 @@ done
 
 for p in '' _d ; do
 cd serial${p}
-%cmake %{defopts} $SUFFIXCONF $(test -n "$p" && echo %{double}) ..
+%cmake %{defopts} $SUFFIXCONF $(test -n "$p" && echo %{double} || echo %{?single}) ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -440,6 +482,10 @@ done
 %{_mandir}/man1/gmx*.1*
 %{_datadir}/%{name}
 %exclude %{_datadir}/%{name}/template
+%exclude %{_datadir}/%{name}/opencl
+
+%files opencl
+%{_datadir}/%{name}/opencl
 
 %files doc
 %{_docdir}/gromacs/manual.pdf
@@ -485,6 +531,7 @@ done
 - don't remove -DNDEBUG from CFLAGS (makes HandlesPermuteModifier test fail
   randomly)
 - convert shell variables to rpm macros
+- enable OpenCL support (x86 and single precision only)
 
 * Tue Sep 22 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-5
 - disable HandlesPermuteModifier test which fails randomly on i686
