@@ -28,8 +28,8 @@
 %endif
 
 Name:		gromacs
-Version:	5.1
-Release:	6%{?dist}
+Version:	5.1.1
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -528,6 +528,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Tue Nov 17 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1.1-1
+- update to 5.1.1
+
 * Wed Sep 23 2015 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 5.1-6
 - don't remove -DNDEBUG from CFLAGS (makes HandlesPermuteModifier test fail
   randomly)
