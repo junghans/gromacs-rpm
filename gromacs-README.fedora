@@ -1,19 +1,22 @@
-Thu Dec 20 2012
-Susi Lehtola
+Wed Feb 24 2016
+Dominik Mierzejewski
 
+Some notes about the Fedora GROMACS package:
 
-Some notes about the GROMACS Fedora package:
-
-- In order to prevent name clashes with other software, all 
-binaries have been renamed to start with g_ . For instance
-grompp is now g_grompp and mdrun is now g_mdrun.
+- Per upstream change, since version 5.1, we're no longer shipping
+any g_* binaries or symlinks. All functionality is now available
+in the main gmx binary. For instance, g_anadock is replaced with
+gmx anadock.
 
 - All binaries are available in single and dual precision.
 The binaries with the _d suffix are double precision versions.
-For instance g_mdrun is single precision and g_mdrun_d is double
+For instance, gmx is single precision and gmx_d is double
 precision.
 
-- MPI enabled binaries are in gromacs-mpi. These contain, too,
-both single and double precision versions. Single precision
-versions have _mpi suffix, double precisin versions _mpi_d suffix.
-For instance g_mdrun_mpi and g_mdrun_mpi_d.
+- MPI enabled binaries are compiled for both MPICH and OpenMPI
+and available in gromacs-mpich and gromacs-openmpi subpackages,
+respectively. These, too, contain both single and double precision
+versions. Single precision versions have _mpich (_openmpi) suffix,
+while double precision versions have _mpich_d (_openmpi_d) suffix.
+For instance g_mdrun_mpich (g_mdrun_openmpi) and g_mdrun_mpich_d
+(g_mdrun_openmpi_d).

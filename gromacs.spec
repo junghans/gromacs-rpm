@@ -1,10 +1,23 @@
+%global git 1
+%global commit bec9c8757e59cae58fc61ed841c0bb73c84079db
+%global shortcommit %(c=%{commit}; echo ${c:0:7})
+
 %ifnarch s390 s390x
 %global with_openmpi 1
 %else
 %global with_openmpi 0
 %endif
 %global execstack_excludearch aarch64 ppc64 ppc64le s390 s390x
-%global opencl_excludearch aarch64 armv7hl ppc64 ppc64le s390 s390x
+%ifnarch aarch64 armv7hl ppc64 ppc64le s390 s390x
+%if 0%{?fedora} > 23
+# https://bugzilla.redhat.com/show_bug.cgi?id=1307869
+%global with_opencl 0
+%else
+%global with_opencl 1
+%endif
+%else
+%global with_opencl 0
+%endif
 
 %global simd None
 %ifarch x86_64
@@ -28,23 +41,35 @@
 %endif
 
 Name:		gromacs
-Version:	5.1.1
-Release:	2%{?dist}
+Version:	2016
+Release:	0.1.20160318git%{shortcommit}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
 
+%if %{git}
+Source0:	https://github.com/gromacs/gromacs/archive/%{commit}/gromacs-%{commit}.tar.gz
+# required for building the manual
+BuildRequires:	%{_bindir}/bibtex
+BuildRequires:	%{_bindir}/convert
+BuildRequires:	%{_bindir}/dvips
+BuildRequires:	%{_bindir}/latex2html
+BuildRequires:	%{_bindir}/makeindex
+BuildRequires:	%{_bindir}/pdflatex
+BuildRequires:	python2-sphinx
+%else
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
+%endif
 Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# fix compilation on ppc64(le) with VSX SIMD
-# http://redmine.gromacs.org/issues/1808
-Patch1:		gromacs-vsx.patch
-# fix gmxManageOpenCL.cmake syntax error and MPI tests
-Patch2:		gromacs-opencl.patch
+# http://redmine.gromacs.org/issues/1911
+# https://github.com/google/googletest/issues/705
+Patch1:		gromacs-gtest-issue705.patch
+# fix building documentation
+Patch3:		gromacs-sphinx-no-man.patch
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	boost-devel
@@ -53,7 +78,7 @@ BuildRequires:	gsl-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 BuildRequires:	motif-devel
-%ifnarch %{opencl_excludearch}
+%if %{with_opencl}
 BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
 # use CPU-based OpenCL implementation for build
@@ -169,7 +194,7 @@ This package contains libraries needed for operation of GROMACS.
 %package openmpi
 Summary:	GROMACS Open MPI binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
-%ifarch %{opencl_arches}
+%if %{with_opencl}
 Requires:	gromacs-opencl = %{version}-%{release}
 %endif
 Requires:	gromacs-openmpi-libs = %{version}-%{release}
@@ -223,7 +248,7 @@ You may need it if you want to write your own analysis programs.
 %package mpich
 Summary:	GROMACS MPICH binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
-%ifnarch %{opencl_excludearch}
+%if %{with_opencl}
 Requires:	gromacs-opencl = %{version}-%{release}
 %endif
 Requires:	gromacs-mpich-libs = %{version}-%{release}
@@ -304,11 +329,16 @@ This package provides scripts needed to run GROMACS with csh and a completion
 script.
 
 %prep
+%if %{git}
+%setup -q -n gromacs-%{commit}
+%patch3 -p1 -b .sphinx-no-man
+%else
 %setup -q
+install -Dpm644 %{SOURCE1} ./serial/docs/manual/manual.pdf
+%endif
 %patch0 -p1 -b .dssp
-%patch1 -p1 -b .vsx
-%ifnarch %{opencl_excludearch}
-%patch2 -p1 -b .opencl
+%if 0%{?fedora} > 23
+%patch1 -p1 -b .gtest705
 %endif
 mkdir {serial,mpich,openmpi}{,_d}
 
@@ -330,21 +360,24 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DGMX_BUILD_UNITTESTS:BOOL=ON \\\
  -DGMX_LAPACK_USER=satlas \\\
  -DGMX_SIMD=%{simd} \\\
- -DGMX_X11=ON
 
-%ifnarch %{opencl_excludearch}
+%if %{with_opencl}
 # OpenCL is available for single precision only
-%global single -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+%global single -DGMX_GPU:BOOL=ON -DGMX_USE_OPENCL:BOOL=ON
 %endif
-%global double -DGMX_DOUBLE=ON
-%global mpi -DGMX_BUILD_MDRUN_ONLY=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF -DGMX_DEFAULT_SUFFIX=OFF
+%global double -DGMX_DOUBLE:BOOL=ON
+%global mpi -DGMX_BUILD_MDRUN_ONLY:BOOL=ON -DGMX_MPI:BOOL=ON -DGMX_THREAD_MPI:BOOL=OFF -DGMX_DEFAULT_SUFFIX:BOOL=OFF
 
 %if %{with_openmpi}
 %{_openmpi_load}
 for p in '' _d ; do
-SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
 cd openmpi${p}
-%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double} || echo %{?single}) ..
+%cmake \
+ %{defopts} \
+ %{mpi} \
+ -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} \
+ $(test -n "$p" && echo %{double} || echo %{?single}) \
+ ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -353,9 +386,13 @@ done
 
 %{_mpich_load}
 for p in '' _d ; do
-SUFFIXCONF="-D GMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -D GMX_LIBS_SUFFIX=${MPI_SUFFIX}${p}"
 cd mpich${p}
-%cmake %{defopts} %{mpi} $SUFFIXCONF $(test -n "$p" && echo %{double} || echo %{?single}) ..
+%cmake \
+ %{defopts} \
+ %{mpi} \
+ -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} \
+ $(test -n "$p" && echo %{double} || echo %{?single}) \
+ ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
@@ -363,11 +400,26 @@ done
 
 for p in '' _d ; do
 cd serial${p}
-%cmake %{defopts} $SUFFIXCONF $(test -n "$p" && echo %{double} || echo %{?single}) ..
+%cmake \
+ %{defopts} \
+ -DGMX_X11=ON \
+ $(test -n "$p" && echo %{double} || echo %{?single}) \
+ ..
 make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
 
+%if %{git}
+cd serial
+%cmake \
+ %{defopts} \
+ -DGMX_X11=ON \
+ %{?single} \
+ -DGMX_BUILD_MANUAL:BOOL=ON -DGMX_BUILD_HELP:BOOL=ON \
+ ..
+LD_LIBRARY_PATH=$PWD/lib make VERBOSE=1 completion install-guide man manual
+cd ..
+%endif
 
 %install
 %if %{with_openmpi}
@@ -403,7 +455,7 @@ done
 mkdir -p %{buildroot}%{_docdir}/gromacs
 install -pm 644 AUTHORS COPYING README %{buildroot}%{_docdir}/gromacs
 # Install manual & packager's note
-install -cpm 644 %{SOURCE1} %{buildroot}%{_docdir}/gromacs/manual.pdf
+install -cpm 644 serial/docs/manual/gromacs.pdf %{buildroot}%{_docdir}/gromacs/manual.pdf
 install -cpm 644 %{SOURCE6} %{buildroot}%{_docdir}/gromacs/README.fedora
 
 pushd %{buildroot}
@@ -478,13 +530,14 @@ done
 %config(noreplace) %{_sysconfdir}/bash_completion.d/gmx-completion*
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
-%{_mandir}/man1/gmx*.1*
+%{_mandir}/man1/gromacs.1*
 %{_datadir}/%{name}
 %exclude %{_datadir}/%{name}/template
+%if %{with_opencl}
 %exclude %{_datadir}/%{name}/opencl
 
-%ifnarch %{opencl_excludearch}
 %files opencl
+%doc docs/OpenCLTODOList.txt
 %{_datadir}/%{name}/opencl
 %endif
 
@@ -528,6 +581,11 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Fri Mar 18 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.1.20160318gitbec9c87
+- update to git master branch
+- disable OpenCL for now (due to pocl FTBFS #1307869)
+- use BOOL with all boolean cmake options
+
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 5.1.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 
