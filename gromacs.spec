@@ -84,7 +84,7 @@ BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
 # use CPU-based OpenCL implementation for build
 BuildRequires:	pocl
-Requires:	gromacs-opencl = %{version}-%{release}
+Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
 # To get rid of executable stacks
 %ifnarch %{execstack_excludearch}
@@ -196,7 +196,7 @@ This package contains libraries needed for operation of GROMACS.
 Summary:	GROMACS Open MPI binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
-Requires:	gromacs-opencl = %{version}-%{release}
+Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
 Requires:	gromacs-openmpi-libs = %{version}-%{release}
 BuildRequires:	openmpi-devel
@@ -250,7 +250,7 @@ You may need it if you want to write your own analysis programs.
 Summary:	GROMACS MPICH binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
-Requires:	gromacs-opencl = %{version}-%{release}
+Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
 Requires:	gromacs-mpich-libs = %{version}-%{release}
 
@@ -587,6 +587,7 @@ done
 - disable OpenCL for now (due to pocl FTBFS #1307869)
 - use BOOL with all boolean cmake options
 - enable hwloc support
+- don't install OpenCL kernels by default (but recommend them)
 
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 5.1.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
