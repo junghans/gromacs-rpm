@@ -68,6 +68,8 @@ Patch0:		gromacs-dssp-path.patch
 # http://redmine.gromacs.org/issues/1911
 # https://github.com/google/googletest/issues/705
 Patch1:		gromacs-gtest-issue705.patch
+# use system lmfit
+Patch2:		gromacs-use-system-lmfit.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
 BuildRequires:	cmake
@@ -78,6 +80,9 @@ BuildRequires:	gsl-devel
 BuildRequires:	hwloc-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
+%if 0%{?fedora} > 23
+BuildRequires:	lmfit-devel >= 6.0
+%endif
 BuildRequires:	motif-devel
 %if %{with_opencl}
 BuildRequires:	ocl-icd-devel
@@ -86,6 +91,7 @@ BuildRequires:	opencl-headers
 BuildRequires:	pocl
 Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
+BuildRequires:	tng-devel
 # To get rid of executable stacks
 %ifnarch %{execstack_excludearch}
 BuildRequires:	/usr/bin/execstack
@@ -340,7 +346,12 @@ install -Dpm644 %{SOURCE1} ./serial/docs/manual/manual.pdf
 %patch0 -p1 -b .dssp
 %if 0%{?fedora} > 23
 %patch1 -p1 -b .gtest705
+%patch2 -p1 -b .lmfit
+rm -r src/external/lmfit
 %endif
+# Delete bundled stuff so that it doesn't get used accidentally
+rm -r src/external/{fftpack,tng_io}
+
 mkdir {serial,mpich,openmpi}{,_d}
 
 %build
@@ -359,6 +370,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \\\
  -DGMX_BLAS_USER=satlas \\\
  -DGMX_BUILD_UNITTESTS:BOOL=ON \\\
+ -DGMX_EXTERNAL_TNG:BOOL=ON \\\
  -DGMX_LAPACK_USER=satlas \\\
  -DGMX_SIMD=%{simd} \\\
 
@@ -588,6 +600,7 @@ done
 - use BOOL with all boolean cmake options
 - enable hwloc support
 - don't install OpenCL kernels by default (but recommend them)
+- unbundle lmfit (F24+), tng
 
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 5.1.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild

@@ -1,0 +1,47 @@
+diff -up gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/CMakeLists.txt.lmfit gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/CMakeLists.txt
+--- gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/CMakeLists.txt.lmfit	2016-02-23 22:23:54.000000000 +0100
++++ gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/CMakeLists.txt	2016-02-24 11:30:09.673453825 +0100
+@@ -203,6 +203,7 @@ target_link_libraries(libgromacs
+                       ${GMX_EXTRA_LIBRARIES}
+                       ${TNG_IO_LIBRARIES}
+                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
++                      ${LMFIT_LIBRARIES}
+                       ${XML_LIBRARIES}
+                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES})
+ set_target_properties(libgromacs PROPERTIES
+diff -up gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/CMakeLists.txt.lmfit gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/CMakeLists.txt
+--- gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/CMakeLists.txt.lmfit	2016-02-24 11:30:09.673453825 +0100
++++ gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/CMakeLists.txt	2016-02-24 11:33:47.587456640 +0100
+@@ -33,9 +33,9 @@
+ # the research papers on the package. Check out http://www.gromacs.org.
+ 
+ file(GLOB GMXCORRFUNC_SOURCES *.cpp)
+-file(GLOB LMFIT_SOURCES ${CMAKE_SOURCE_DIR}/src/external/lmfit/*.c)
++find_library(LMFIT_LIBRARIES lmfit)
+ 
+-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES}  ${LMFIT_SOURCES} PARENT_SCOPE)
++set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES} PARENT_SCOPE)
+ if (BUILD_TESTING)
+     add_subdirectory(tests)
+ endif()
+diff -up gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/expfit.cpp.lmfit gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/expfit.cpp
+--- gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/expfit.cpp.lmfit	2016-02-23 22:23:54.000000000 +0100
++++ gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/correlationfunctions/expfit.cpp	2016-02-24 11:34:14.894582306 +0100
+@@ -52,7 +52,7 @@
+ 
+ #include <algorithm>
+ 
+-#include "external/lmfit/lmcurve.h"
++#include <lmcurve_tyd.h>
+ 
+ #include "gromacs/correlationfunctions/integrate.h"
+ #include "gromacs/fileio/xvgr.h"
+@@ -483,7 +483,7 @@ static gmx_bool lmfit_exp(int          n
+     do
+     {
+         ochisq = chisq;
+-        lmcurve(nparam, parm, nfit, x, y, dy,
++        lmcurve_tyd(nparam, parm, nfit, x, y, dy,
+                 lmcurves[eFitFn], &control, status);
+         chisq = gmx::square(status->fnorm);
+         if (bVerbose)
