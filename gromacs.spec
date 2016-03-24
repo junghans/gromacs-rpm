@@ -75,6 +75,7 @@ BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	boost-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
+BuildRequires:	hwloc-devel
 BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 BuildRequires:	motif-devel
@@ -585,6 +586,7 @@ done
 - update to git master branch
 - disable OpenCL for now (due to pocl FTBFS #1307869)
 - use BOOL with all boolean cmake options
+- enable hwloc support
 
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 5.1.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
