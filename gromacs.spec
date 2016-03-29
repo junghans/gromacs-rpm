@@ -171,6 +171,8 @@ This package the manual in PDF format.
 Summary:	GROMACS header files and development libraries
 Requires:	gromacs-libs = %{version}-%{release}
 Requires:	cmake
+Obsoletes:	gromacs-mpich-devel < 2016-0.1.20160318gitbec9c87
+Obsoletes:	gromacs-openmpi-devel < 2016-0.1.20160318gitbec9c87
 
 %description devel
 GROMACS is a versatile and extremely well optimized package to perform
@@ -204,7 +206,7 @@ Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
 Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
-Requires:	gromacs-openmpi-libs = %{version}-%{release}
+Obsoletes:	gromacs-openmpi-libs < 2016-0.1.20160318gitbec9c87
 BuildRequires:	openmpi-devel
 
 %description openmpi
@@ -217,38 +219,6 @@ and solid state physics.
 mdrun has been compiled with thread parallellization (for running on
 a single node) and with Open MPI (for running on multiple nodes).
 This package single and double precision binaries and libraries.
-
-
-%package openmpi-libs
-Summary:	GROMACS Open MPI shared libraries
-
-%description openmpi-libs
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package contains libraries needed for operation of GROMACS Open MPI.
-
-
-%package openmpi-devel
-Summary:	GROMACS Open MPI development libraries
-Requires:	gromacs-devel = %{version}-%{release}
-Requires:	gromacs-openmpi = %{version}-%{release}
-BuildRequires:	openmpi-devel
-Requires:	openmpi-devel
-
-
-%description openmpi-devel
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package contains development libraries for GROMACS Open MPI.
-You may need it if you want to write your own analysis programs.
 %endif
 
 
@@ -258,7 +228,8 @@ Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
 Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
-Requires:	gromacs-mpich-libs = %{version}-%{release}
+Obsoletes:	gromacs-mpich-libs < 2016-0.1.20160318gitbec9c87
+BuildRequires:	mpich-devel
 
 %description mpich
 GROMACS is a versatile and extremely well optimized package to perform
@@ -270,36 +241,6 @@ and solid state physics.
 mdrun has been compiled with thread parallellization (for running on
 a single node) and with MPICH (for running on multiple nodes).
 This package single and double precision binaries and libraries.
-
-%package mpich-libs
-Summary:	GROMACS MPICH shared libraries
-
-%description mpich-libs
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package contains libraries needed for operation of GROMACS MPICH.
-
-
-%package mpich-devel
-Summary:	GROMACS MPICH development libraries
-Requires:	gromacs-devel = %{version}-%{release}
-Requires:	gromacs-mpich = %{version}-%{release}
-BuildRequires:	mpich-devel
-Requires:	mpich-devel
-
-%description mpich-devel
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package contains development libraries for GROMACS MPICH.
-You may need it if you want to write your own analysis programs.
 
 
 %package zsh
@@ -364,7 +305,6 @@ export LDFLAGS="-L%{_libdir}/atlas"
 
 # Default options, used for all compilations
 %global defopts \\\
- -DBUILD_SHARED_LIBS=ON \\\
  -DBUILD_TESTING:BOOL=ON \\\
  -DCMAKE_SKIP_RPATH:BOOL=ON \\\
  -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \\\
@@ -379,7 +319,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
 %global single -DGMX_GPU:BOOL=ON -DGMX_USE_OPENCL:BOOL=ON
 %endif
 %global double -DGMX_DOUBLE:BOOL=ON
-%global mpi -DGMX_BUILD_MDRUN_ONLY:BOOL=ON -DGMX_MPI:BOOL=ON -DGMX_THREAD_MPI:BOOL=OFF -DGMX_DEFAULT_SUFFIX:BOOL=OFF
+%global mpi -DGMX_BUILD_MDRUN_ONLY:BOOL=ON -DGMX_MPI:BOOL=ON -DGMX_THREAD_MPI:BOOL=OFF -DGMX_DEFAULT_SUFFIX:BOOL=OFF -DBUILD_SHARED_LIBS:BOOL=OFF
 
 %if %{with_openmpi}
 %{_openmpi_load}
@@ -438,24 +378,16 @@ cd ..
 %if %{with_openmpi}
 %{_openmpi_load}
 # Make install-mdrun target is broken, do install manually
-mkdir -p %{buildroot}{$MPI_BIN,$MPI_LIB}
 for p in '' _d ; do
-cd openmpi${p}
-install -p -m 755 bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/
-cp -a lib/libgromacs_mdrun${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
-cd ..
+install -Dpm755 openmpi${p}/bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/mdrun${MPI_SUFFIX}${p}
 done
 %{_openmpi_unload}
 %endif
 
 %{_mpich_load}
 # Make install-mdrun target is broken, do install manually
-mkdir -p %{buildroot}{$MPI_BIN,$MPI_LIB}
 for p in '' _d ; do
-cd mpich${p}
-install -p -m 755 bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/
-cp -a lib/libgromacs_mdrun${MPI_SUFFIX}${p}.so* %{buildroot}$MPI_LIB/
-cd ..
+install -Dpm755 mpich${p}/bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/mdrun${MPI_SUFFIX}${p}
 done
 %{_mpich_unload}
 
@@ -570,22 +502,10 @@ done
 %if %{with_openmpi}
 %files openmpi
 %{_libdir}/openmpi/bin/mdrun_openmpi*
-
-%files openmpi-libs
-%{_libdir}/openmpi/lib/libgromacs_mdrun_openmpi*.so.*
-
-%files openmpi-devel
-%{_libdir}/openmpi/lib/libgromacs_mdrun_openmpi*.so
 %endif
 
 %files mpich
 %{_libdir}/mpich/bin/mdrun_mpich*
-
-%files mpich-libs
-%{_libdir}/mpich/lib/libgromacs_mdrun_mpich*.so.*
-
-%files mpich-devel
-%{_libdir}/mpich/lib/libgromacs_mdrun_mpich*.so
 
 %files zsh
 %{_bindir}/GMXRC.zsh
@@ -601,6 +521,8 @@ done
 - enable hwloc support
 - don't install OpenCL kernels by default (but recommend them)
 - unbundle lmfit (F24+), tng
+- don't build shared libs for MPI builds
+- drop -libs and -devel MPI subpackages
 
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 5.1.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
