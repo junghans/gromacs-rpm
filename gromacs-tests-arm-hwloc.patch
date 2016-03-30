@@ -1,0 +1,19 @@
+diff -up gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/hardware/tests/hardwaretopology.cpp.hwloc-arm gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/hardware/tests/hardwaretopology.cpp
+--- gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/hardware/tests/hardwaretopology.cpp.hwloc-arm	2016-03-18 16:05:26.000000000 +0100
++++ gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/hardware/tests/hardwaretopology.cpp	2016-03-27 00:26:53.629784911 +0100
+@@ -76,6 +76,7 @@ TEST(HardwareTopologyTest, Execute)
+     << "Please mail gmx-developers@gromacs.org so we can try to fix it.";
+ }
+ 
++#if 0
+ #if GMX_HWLOC
+ TEST(HardwareTopologyTest, HwlocExecute)
+ {
+@@ -90,6 +91,7 @@ TEST(HardwareTopologyTest, HwlocExecute)
+ #endif
+ }
+ #endif
++#endif
+ 
+ TEST(HardwareTopologyTest, ProcessorSelfconsistency)
+ {

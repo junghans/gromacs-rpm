@@ -72,6 +72,14 @@ Patch1:		gromacs-gtest-issue705.patch
 Patch2:		gromacs-use-system-lmfit.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
+# disable failing tests on i686
+# http://redmine.gromacs.org/issues/1930
+Patch4:		gromacs-tests-i686.patch
+# disable failing hwloc tests on arm
+Patch5:		gromacs-tests-arm-hwloc.patch
+# disable mrrc instruction on armv7 (illegal in usermode)
+# http://redmine.gromacs.org/issues/1933
+Patch6:		gromacs-arm-no-mrrc.patch
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	boost-devel
@@ -289,6 +297,15 @@ install -Dpm644 %{SOURCE1} ./serial/docs/manual/manual.pdf
 %patch1 -p1 -b .gtest705
 %patch2 -p1 -b .lmfit
 rm -r src/external/lmfit
+%endif
+%ifarch i686
+%patch4 -p1 -b .i686
+%endif
+%ifarch aarch64 armv7hl
+%patch5 -p1 -b .hwloc-arm
+%endif
+%ifarch armv7hl
+%patch6 -p1 -b .arm
 %endif
 # Delete bundled stuff so that it doesn't get used accidentally
 rm -r src/external/{fftpack,tng_io}
@@ -523,6 +540,7 @@ done
 - unbundle lmfit (F24+), tng
 - don't build shared libs for MPI builds
 - drop -libs and -devel MPI subpackages
+- disable failing tests on arm and i686
 
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 5.1.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild

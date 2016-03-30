@@ -1,0 +1,17 @@
+diff -up gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/timing/cyclecounter.h.arm gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/timing/cyclecounter.h
+--- gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/timing/cyclecounter.h.arm	2016-03-18 15:05:26.000000000 +0000
++++ gromacs-bec9c8757e59cae58fc61ed841c0bb73c84079db/src/gromacs/timing/cyclecounter.h	2016-03-30 10:18:38.244692141 +0000
+@@ -235,13 +235,6 @@ static __inline__ gmx_cycles_t gmx_cycle
+ 
+     return cycle;
+ }
+-#elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
+-static __inline__ gmx_cycles_t gmx_cycles_read(void)
+-{
+-    unsigned int cycles_lo, cycles_hi;
+-    asm volatile("mrrc p15, 1, %0, %1, c14" : "=r" (cycles_lo), "=r" (cycles_hi));
+-    return ((gmx_cycles_t)cycles_lo) | (((gmx_cycles_t)cycles_hi) << 32);
+-}
+ #elif defined(_MSC_VER)
+ static __inline gmx_cycles_t gmx_cycles_read(void)
+ {
