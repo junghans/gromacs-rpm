@@ -7,7 +7,6 @@
 %else
 %global with_openmpi 0
 %endif
-%global execstack_excludearch aarch64 ppc64 ppc64le s390 s390x
 %ifnarch aarch64 armv7hl ppc64 ppc64le s390 s390x
 %if 0%{?fedora} > 23
 # https://bugzilla.redhat.com/show_bug.cgi?id=1307869
@@ -97,9 +96,7 @@ Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
 BuildRequires:	tng-devel
 # To get rid of executable stacks
-%ifnarch %{execstack_excludearch}
 BuildRequires:	/usr/bin/execstack
-%endif
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	gromacs-libs = %{version}-%{release}
 Obsoletes:	gromacs-ngmx < 5.0.4-1
@@ -435,9 +432,7 @@ mv ./%{_bindir}/gmx-completion-gmx_d.bash ./etc/bash_completion.d/gmx-completion
 find ./ -name *.la -delete
 
 # Get rid of executable stacks
-%ifnarch %{execstack_excludearch}
 find ./ -name *.so.* -exec execstack -c {} \;
-%endif
 popd
 
 
@@ -530,6 +525,7 @@ done
 - update to git master branch
 - drop obsolete patches
 - enable NEON instructions on armv7hnl arch
+- drop condition around execstack usage, it's available everywhere now
 
 * Fri Mar 18 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.1.20160318gitbec9c87
 - update to git master branch
