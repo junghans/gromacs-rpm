@@ -32,9 +32,8 @@
 %ifarch ppc64le
 %global simd IBM_VSX
 %endif
-# not all Fedora-supported CPUs have NEON
-%ifarch armv7hl
-#%%global simd ARM_NEON
+%ifarch armv7hnl
+%global simd ARM_NEON
 %endif
 %ifarch aarch64
 %global simd ARM_NEON_ASIMD
@@ -530,6 +529,7 @@ done
 * Mon Apr 04 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.2.20160403gitd6e35c9
 - update to git master branch
 - drop obsolete patches
+- enable NEON instructions on armv7hnl arch
 
 * Fri Mar 18 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.1.20160318gitbec9c87
 - update to git master branch
