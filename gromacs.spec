@@ -1,5 +1,5 @@
 %global git 1
-%global commit bec9c8757e59cae58fc61ed841c0bb73c84079db
+%global commit d6e35c96ceeb552afeeec4655567af2945994958
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 
 %ifnarch s390 s390x
@@ -42,7 +42,7 @@
 
 Name:		gromacs
 Version:	2016
-Release:	0.1.20160318git%{shortcommit}%{?dist}
+Release:	0.2.20160403git%{shortcommit}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -65,9 +65,6 @@ Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# http://redmine.gromacs.org/issues/1911
-# https://github.com/google/googletest/issues/705
-Patch1:		gromacs-gtest-issue705.patch
 # use system lmfit
 Patch2:		gromacs-use-system-lmfit.patch
 # fix building documentation
@@ -294,7 +291,6 @@ install -Dpm644 %{SOURCE1} ./serial/docs/manual/manual.pdf
 %endif
 %patch0 -p1 -b .dssp
 %if 0%{?fedora} > 23
-%patch1 -p1 -b .gtest705
 %patch2 -p1 -b .lmfit
 rm -r src/external/lmfit
 %endif
@@ -531,6 +527,10 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Mon Apr 04 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.2.20160403gitd6e35c9
+- update to git master branch
+- drop obsolete patches
+
 * Fri Mar 18 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.1.20160318gitbec9c87
 - update to git master branch
 - disable OpenCL for now (due to pocl FTBFS #1307869)
