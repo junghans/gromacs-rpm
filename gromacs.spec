@@ -7,13 +7,10 @@
 %else
 %global with_openmpi 0
 %endif
+# hopefully armv7hl will be available soon
+# https://bugzilla.redhat.com/show_bug.cgi?id=1324438
 %ifnarch aarch64 armv7hl ppc64 ppc64le s390 s390x
-%if 0%{?fedora} > 23
-# https://bugzilla.redhat.com/show_bug.cgi?id=1307869
-%global with_opencl 0
-%else
 %global with_opencl 1
-%endif
 %else
 %global with_opencl 0
 %endif
@@ -40,7 +37,7 @@
 
 Name:		gromacs
 Version:	2016
-Release:	0.2.20160403git%{shortcommit}%{?dist}
+Release:	0.3.20160403git%{shortcommit}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -521,6 +518,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Wed Apr 06 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.3.20160403gitd6e35c9
+- re-enable OpenCL (pocl was fixed recently)
+
 * Mon Apr 04 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.2.20160403gitd6e35c9
 - update to git master branch
 - drop obsolete patches
