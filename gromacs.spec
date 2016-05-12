@@ -1,5 +1,5 @@
 %global git 1
-%global commit d6e35c96ceeb552afeeec4655567af2945994958
+%global commit d44d7d6bebdb7fa52090b744854d49f34099e044
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 
 %ifnarch s390 s390x
@@ -7,9 +7,8 @@
 %else
 %global with_openmpi 0
 %endif
-# hopefully armv7hl will be available soon
 # https://bugzilla.redhat.com/show_bug.cgi?id=1324438
-%ifnarch aarch64 armv7hl ppc64 ppc64le s390 s390x
+%ifnarch aarch64 %{power64} s390 s390x
 %global with_opencl 1
 %else
 %global with_opencl 0
@@ -19,11 +18,8 @@
 %ifarch x86_64
 %global simd SSE2
 %endif
-# doesn't compile at the moment due to usage of vec_mul which is VSX-only
-# http://redmine.gromacs.org/issues/1812
-# also, not all Fedora-supported CPUs have AltiVec
-%ifarch ppc64
-#%%global simd IBM_VMX
+%ifarch ppc64p7
+%global simd IBM_VMX
 %endif
 %ifarch ppc64le
 %global simd IBM_VSX
@@ -37,7 +33,7 @@
 
 Name:		gromacs
 Version:	2016
-Release:	0.3.20160403git%{shortcommit}%{?dist}
+Release:	0.4.20160510git%{shortcommit}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -61,6 +57,7 @@ Source6:	gromacs-README.fedora
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
 # use system lmfit
+# http://redmine.gromacs.org/issues/1957
 Patch2:		gromacs-use-system-lmfit.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
@@ -78,7 +75,6 @@ BuildRequires:	boost-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
 BuildRequires:	hwloc-devel
-BuildRequires:	libxml2-devel
 BuildRequires:	libX11-devel
 %if 0%{?fedora} > 23
 BuildRequires:	lmfit-devel >= 6.0
@@ -88,9 +84,12 @@ BuildRequires:	motif-devel
 BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
 # use CPU-based OpenCL implementation for build
-BuildRequires:	pocl
+BuildRequires:	pocl >= 0.13-4
 Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
+# cannot unbundle due to https://bugzilla.redhat.com/show_bug.cgi?id=1202166
+# RFE filed upstream as well: http://redmine.gromacs.org/issues/1956
+#BuildRequires:	tinyxml2-devel >= 3.0.0
 BuildRequires:	tng-devel
 # To get rid of executable stacks
 BuildRequires:	/usr/bin/execstack
@@ -186,6 +185,7 @@ programs.
 
 %package libs
 Summary:	GROMACS shared libraries
+Provides:	bundled(tinyxml2) = 3.0.0
 
 %description libs
 GROMACS is a versatile and extremely well optimized package to perform
@@ -290,10 +290,10 @@ rm -r src/external/lmfit
 %ifarch i686
 %patch4 -p1 -b .i686
 %endif
-%ifarch aarch64 armv7hl
+%ifarch aarch64 armv7hl armv7hnl
 %patch5 -p1 -b .hwloc-arm
 %endif
-%ifarch armv7hl
+%ifarch armv7hl armv7hnl
 %patch6 -p1 -b .arm
 %endif
 # Delete bundled stuff so that it doesn't get used accidentally
@@ -518,6 +518,12 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Sun Apr 10 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.4.20160510gitd44d7d6
+- update from git master
+- enable OpenCL on armv7hl and BR: pocl >= 0.13-4 (#1324438)
+- drop libxml2 BR (upstream switched to bundled tinyxml2-3.0.0)
+- add missing arches in arch-dependent sections
+
 * Wed Apr 06 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.3.20160403gitd6e35c9
 - re-enable OpenCL (pocl was fixed recently)
 
