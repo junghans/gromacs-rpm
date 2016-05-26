@@ -33,7 +33,7 @@
 
 Name:		gromacs
 Version:	2016
-Release:	0.4.20160510git%{shortcommit}%{?dist}
+Release:	0.5.20160510git%{shortcommit}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -69,6 +69,8 @@ Patch5:		gromacs-tests-arm-hwloc.patch
 # disable mrrc instruction on armv7 (illegal in usermode)
 # http://redmine.gromacs.org/issues/1933
 Patch6:		gromacs-arm-no-mrrc.patch
+# https://gerrit.gromacs.org/#/c/5862/
+Patch7:		gromacs-use-system-tinyxml2.patch
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	boost-devel
@@ -89,7 +91,7 @@ Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
 # cannot unbundle due to https://bugzilla.redhat.com/show_bug.cgi?id=1202166
 # RFE filed upstream as well: http://redmine.gromacs.org/issues/1956
-#BuildRequires:	tinyxml2-devel >= 3.0.0
+BuildRequires:	tinyxml2-devel >= 3.0.0
 BuildRequires:	tng-devel
 # To get rid of executable stacks
 BuildRequires:	/usr/bin/execstack
@@ -185,7 +187,6 @@ programs.
 
 %package libs
 Summary:	GROMACS shared libraries
-Provides:	bundled(tinyxml2) = 3.0.0
 
 %description libs
 GROMACS is a versatile and extremely well optimized package to perform
@@ -296,8 +297,9 @@ rm -r src/external/lmfit
 %ifarch armv7hl armv7hnl
 %patch6 -p1 -b .arm
 %endif
+%patch7 -p1 -b .txml2
 # Delete bundled stuff so that it doesn't get used accidentally
-rm -r src/external/{fftpack,tng_io}
+rm -r src/external/{fftpack,tinyxml2,tng_io}
 
 mkdir {serial,mpich,openmpi}{,_d}
 
@@ -317,6 +319,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DGMX_BLAS_USER=satlas \\\
  -DGMX_BUILD_UNITTESTS:BOOL=ON \\\
  -DGMX_EXTERNAL_TNG:BOOL=ON \\\
+ -DGMX_EXTERNAL_TINYXML2:BOOL=ON \\\
  -DGMX_LAPACK_USER=satlas \\\
  -DGMX_SIMD=%{simd} \\\
 
@@ -518,6 +521,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Sat May 21 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.5.20160510gitd44d7d6
+- unbundle tinyxml2
+
 * Sun Apr 10 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.4.20160510gitd44d7d6
 - update from git master
 - enable OpenCL on armv7hl and BR: pocl >= 0.13-4 (#1324438)
