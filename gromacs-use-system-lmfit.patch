@@ -1,64 +1,21 @@
-diff -up gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/CMakeLists.txt.lmfit gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/CMakeLists.txt
---- gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/CMakeLists.txt.lmfit	2016-05-10 16:55:17.000000000 +0200
-+++ gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/CMakeLists.txt	2016-05-12 12:33:06.416806977 +0200
-@@ -204,6 +204,7 @@ target_link_libraries(libgromacs
-                       ${GMX_EXTRA_LIBRARIES}
+diff -up gromacs-2016/src/gromacs/CMakeLists.txt.lmfit gromacs-2016/src/gromacs/CMakeLists.txt
+--- gromacs-2016/src/gromacs/CMakeLists.txt.lmfit	2016-07-09 02:55:38.000000000 +0200
++++ gromacs-2016/src/gromacs/CMakeLists.txt	2016-08-24 00:20:34.262790989 +0200
+@@ -124,7 +124,7 @@ list(APPEND LIBGROMACS_SOURCES ${THREAD_
+ list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
+ tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
+ 
+-get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES_TO_LINK LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
++get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
+ include_directories(${LMFIT_INCLUDE_DIR_ORDER} SYSTEM "${LMFIT_INCLUDE_DIRECTORY}")
+ list(APPEND LIBGROMACS_SOURCES ${LMFIT_SOURCES})
+ 
+@@ -183,7 +183,7 @@ target_link_libraries(libgromacs
                        ${TNG_IO_LIBRARIES}
                        ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
-+                      ${LMFIT_LIBRARIES}
                        ${XML_LIBRARIES}
+-                      ${LMFIT_LIBRARIES_TO_LINK}
++                      ${LMFIT_LIBRARIES}
                        ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES}
                        ${GMX_STDLIB_LIBRARIES})
-diff -up gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/CMakeLists.txt.lmfit gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/CMakeLists.txt
---- gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/CMakeLists.txt.lmfit	2016-05-10 16:55:17.000000000 +0200
-+++ gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/CMakeLists.txt	2016-05-12 12:33:06.416806977 +0200
-@@ -33,9 +33,9 @@
- # the research papers on the package. Check out http://www.gromacs.org.
- 
- file(GLOB GMXCORRFUNC_SOURCES *.cpp)
--file(GLOB LMFIT_SOURCES ${CMAKE_SOURCE_DIR}/src/external/lmfit/*.cpp)
-+find_library(LMFIT_LIBRARIES lmfit)
- 
--set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES}  ${LMFIT_SOURCES} PARENT_SCOPE)
-+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES} PARENT_SCOPE)
- if (BUILD_TESTING)
-     add_subdirectory(tests)
- endif()
-diff -up gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/expfit.cpp.lmfit gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/expfit.cpp
---- gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/expfit.cpp.lmfit	2016-05-10 16:55:17.000000000 +0200
-+++ gromacs-d44d7d6bebdb7fa52090b744854d49f34099e044/src/gromacs/correlationfunctions/expfit.cpp	2016-05-12 12:49:08.266651639 +0200
-@@ -52,7 +52,7 @@
- 
- #include <algorithm>
- 
--#include "external/lmfit/gmx_lmcurve.h"
-+#include <lmcurve_tyd.h>
- 
- #include "gromacs/correlationfunctions/integrate.h"
- #include "gromacs/fileio/xvgr.h"
-@@ -448,7 +448,7 @@ static gmx_bool lmfit_exp(int          n
-     /* Using default control structure for double precision fitting that
-      * comes with the lmfit package (i.e. from the include file).
-      */
--    control            = gmx_lm_control_double;
-+    control            = lm_control_double;
-     control.verbosity  = (bVerbose ? 1 : 0);
-     control.n_maxpri   = 0;
-     control.m_maxpri   = 0;
-@@ -483,14 +483,14 @@ static gmx_bool lmfit_exp(int          n
-     do
-     {
-         ochisq = chisq;
--        gmx_lmcurve(nparam, parm, nfit, x, y, dy,
-+        lmcurve_tyd(nparam, parm, nfit, x, y, dy,
-                     lmcurves[eFitFn], &control, status);
-         chisq = gmx::square(status->fnorm);
-         if (bVerbose)
-         {
-             printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n",
-                    status->fnorm, status->nfev, status->userbreak,
--                   gmx_lm_infmsg[status->outcome]);
-+                   lm_infmsg[status->outcome]);
-         }
-         if (bVerbose)
-         {
+ set_target_properties(libgromacs PROPERTIES

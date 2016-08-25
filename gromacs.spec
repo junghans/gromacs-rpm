@@ -1,4 +1,4 @@
-%global git 1
+%global git 0
 %global commit d44d7d6bebdb7fa52090b744854d49f34099e044
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 
@@ -7,8 +7,8 @@
 %else
 %global with_openmpi 0
 %endif
-# https://bugzilla.redhat.com/show_bug.cgi?id=1324438
-%ifnarch aarch64 %{power64} s390 s390x
+# compilation of OpenCL support is failing only on ppc64le
+%ifnarch ppc64le
 %global with_opencl 1
 %else
 %global with_opencl 0
@@ -33,7 +33,7 @@
 
 Name:		gromacs
 Version:	2016
-Release:	0.5.20160510git%{shortcommit}%{?dist}
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -56,41 +56,27 @@ Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# use system lmfit
-# http://redmine.gromacs.org/issues/1957
+# fix build with system lmfit
 Patch2:		gromacs-use-system-lmfit.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
-# disable failing tests on i686
-# http://redmine.gromacs.org/issues/1930
-Patch4:		gromacs-tests-i686.patch
-# disable failing hwloc tests on arm
-Patch5:		gromacs-tests-arm-hwloc.patch
-# disable mrrc instruction on armv7 (illegal in usermode)
-# http://redmine.gromacs.org/issues/1933
-Patch6:		gromacs-arm-no-mrrc.patch
-# https://gerrit.gromacs.org/#/c/5862/
-Patch7:		gromacs-use-system-tinyxml2.patch
+# Fix build with system TNG
+Patch8:		gromacs-tng.patch
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	boost-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
+BuildRequires:	hwloc
 BuildRequires:	hwloc-devel
 BuildRequires:	libX11-devel
-%if 0%{?fedora} > 23
 BuildRequires:	lmfit-devel >= 6.0
-%endif
 BuildRequires:	motif-devel
 %if %{with_opencl}
 BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
-# use CPU-based OpenCL implementation for build
-BuildRequires:	pocl >= 0.13-4
 Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
-# cannot unbundle due to https://bugzilla.redhat.com/show_bug.cgi?id=1202166
-# RFE filed upstream as well: http://redmine.gromacs.org/issues/1956
 BuildRequires:	tinyxml2-devel >= 3.0.0
 BuildRequires:	tng-devel
 # To get rid of executable stacks
@@ -281,27 +267,16 @@ script.
 %patch3 -p1 -b .sphinx-no-man
 %else
 %setup -q
-install -Dpm644 %{SOURCE1} ./serial/docs/manual/manual.pdf
+install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
 %patch0 -p1 -b .dssp
-%if 0%{?fedora} > 23
 %patch2 -p1 -b .lmfit
 rm -r src/external/lmfit
-%endif
-%ifarch i686
-%patch4 -p1 -b .i686
-%endif
-%ifarch aarch64 armv7hl armv7hnl
-%patch5 -p1 -b .hwloc-arm
-%endif
-%ifarch armv7hl armv7hnl
-%patch6 -p1 -b .arm
-%endif
-%patch7 -p1 -b .txml2
+%patch8 -p1 -b .tng
 # Delete bundled stuff so that it doesn't get used accidentally
 rm -r src/external/{fftpack,tinyxml2,tng_io}
 
-mkdir {serial,mpich,openmpi}{,_d}
+mkdir -p {serial,mpich,openmpi}{,_d}
 
 %build
 # Assembly kernels haven't got .note.GNU-stack sections
@@ -318,6 +293,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \\\
  -DGMX_BLAS_USER=satlas \\\
  -DGMX_BUILD_UNITTESTS:BOOL=ON \\\
+ -DGMX_EXTERNAL_LMFIT:BOOL=ON \\\
  -DGMX_EXTERNAL_TNG:BOOL=ON \\\
  -DGMX_EXTERNAL_TINYXML2:BOOL=ON \\\
  -DGMX_LAPACK_USER=satlas \\\
@@ -482,7 +458,7 @@ done
 %config(noreplace) %{_sysconfdir}/bash_completion.d/gmx-completion*
 %{_bindir}/GMXRC
 %{_bindir}/GMXRC.bash
-%{_mandir}/man1/gromacs.1*
+%{_mandir}/man1/gmx*.1*
 %{_datadir}/%{name}
 %exclude %{_datadir}/%{name}/template
 %if %{with_opencl}
@@ -521,6 +497,14 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Tue Aug 23 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-1
+- update to 2016 release
+- drop upstreamed patches
+- fix build with system lmfit
+- fix build with bundled tng removed
+- drop pocl from BuildRequires, it's not required to build
+- enable OpenCL on all arches (except ppc64le, where it's still failing)
+
 * Sat May 21 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-0.5.20160510gitd44d7d6
 - unbundle tinyxml2
 
