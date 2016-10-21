@@ -33,7 +33,7 @@
 
 Name:		gromacs
 Version:	2016
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -497,6 +497,9 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Fri Oct 21 2016 Orion Poplawski <orion@cora.nwra.com>
+- Rebuild for openmpi 2.0
+
 * Tue Aug 23 2016 Dominik 'Rathann' Mierzejewski <rpm@greysector.net> - 2016-1
 - update to 2016 release
 - drop upstreamed patches
