@@ -1,11 +1,32 @@
-diff -up gromacs-2016/src/gromacs/CMakeLists.txt.tng gromacs-2016/src/gromacs/CMakeLists.txt
---- gromacs-2016/src/gromacs/CMakeLists.txt.tng	2016-07-09 02:55:38.000000000 +0200
-+++ gromacs-2016/src/gromacs/CMakeLists.txt	2016-08-23 23:41:58.359326148 +0200
-@@ -122,7 +122,6 @@ tmpi_get_source_list(THREAD_MPI_SOURCES
- list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
+From 02922173c8d5f35f1d3730254eccf0621e55cbe7 Mon Sep 17 00:00:00 2001
+From: Christoph Junghans <junghans@votca.org>
+Date: Thu, 3 Nov 2016 12:12:17 -0600
+Subject: [PATCH] cmake: fix build with GMX_EXTERNAL_TNG=ON
+
+tng_set_source_properties is not defined in case of GMX_EXTERNAL_TNG=ON
+due to the fact that BuildTNG.cmake never gets included. Also this
+call isn't really needed tng doesn't get compile when external anyway.
+
+Change-Id: Id3c7e0da55ce9ef8cf43d2aecaa187e965bf6ad2
+---
+ src/gromacs/CMakeLists.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/gromacs/CMakeLists.txt b/src/gromacs/CMakeLists.txt
+index b7d9bf4..8b7fe3f 100644
+--- a/src/gromacs/CMakeLists.txt
++++ b/src/gromacs/CMakeLists.txt
+@@ -123,7 +123,9 @@ list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
  
- list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
--tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
+ if(GMX_USE_TNG)
+     list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
+-    tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
++    if (NOT GMX_EXTERNAL_TNG)
++        tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
++    endif()
+ endif()
  
- get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
- include_directories(${LMFIT_INCLUDE_DIR_ORDER} SYSTEM "${LMFIT_INCLUDE_DIRECTORY}")
+ get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES_TO_LINK LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
+-- 
+2.7.3
+

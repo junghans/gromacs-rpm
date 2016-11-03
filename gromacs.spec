@@ -32,8 +32,8 @@
 %endif
 
 Name:		gromacs
-Version:	2016
-Release:	2%{?dist}
+Version:	2016.1
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -56,8 +56,6 @@ Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# fix build with system lmfit
-Patch2:		gromacs-use-system-lmfit.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
 # Fix build with system TNG
@@ -270,11 +268,9 @@ script.
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
 %patch0 -p1 -b .dssp
-%patch2 -p1 -b .lmfit
-rm -r src/external/lmfit
 %patch8 -p1 -b .tng
 # Delete bundled stuff so that it doesn't get used accidentally
-rm -r src/external/{fftpack,tinyxml2,tng_io}
+rm -r src/external/{fftpack,tinyxml2,tng_io,lmfit}
 
 mkdir -p {serial,mpich,openmpi}{,_d}
 
@@ -497,6 +493,11 @@ done
 %{_bindir}/GMXRC.csh
 
 %changelog
+* Thu Nov 03 2016 Christoph Junghans <junghans@votca.org> - 2016.1-1
+- Update to 2016.1
+- Drop gromacs-use-system-lmfit.patch, made it upstream
+- Update gromacs-tng.patch, https://gerrit.gromacs.org/#/c/6319/
+
 * Fri Oct 21 2016 Orion Poplawski <orion@cora.nwra.com>
 - Rebuild for openmpi 2.0
 
