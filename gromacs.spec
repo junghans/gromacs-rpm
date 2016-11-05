@@ -79,14 +79,21 @@ BuildRequires:	tinyxml2-devel >= 3.0.0
 BuildRequires:	tng-devel
 # To get rid of executable stacks
 BuildRequires:	/usr/bin/execstack
+BuildRequires:	bash-completion
+%define compdir %(pkg-config --variable=completionsdir bash-completion)
+%if "%{compdir}" == ""
+%define compdir "/etc/bash_completion.d"
+%endif
 Requires:	gromacs-common = %{version}-%{release}
 Requires:	gromacs-libs = %{version}-%{release}
 Obsoletes:	gromacs-ngmx < 5.0.4-1
+Obsoletes:	gromacs-csh < 2016.1-2
+Obsoletes:	gromacs-zsh < 2016.1-2
 
 %description
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -110,7 +117,7 @@ Obsoletes:	gromacs-bash < 5.0.4-1
 %description common
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -128,7 +135,7 @@ Suggests:	pocl
 %description opencl
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -143,7 +150,7 @@ Obsoletes: gromacs-common < 5.0.5-2
 %description doc
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -160,7 +167,7 @@ Obsoletes:	gromacs-openmpi-devel < 2016-0.1.20160318gitbec9c87
 %description devel
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -175,7 +182,7 @@ Summary:	GROMACS shared libraries
 %description libs
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -195,7 +202,7 @@ BuildRequires:	openmpi-devel
 %description openmpi
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -217,7 +224,7 @@ BuildRequires:	mpich-devel
 %description mpich
 GROMACS is a versatile and extremely well optimized package to perform
 molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
+It is developed for bio-molecules like proteins, but the extremely high
 performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
@@ -225,39 +232,6 @@ mdrun has been compiled with thread parallellization (for running on
 a single node) and with MPICH (for running on multiple nodes).
 This package single and double precision binaries and libraries.
 
-
-%package zsh
-Summary:	GROMACS zsh support
-Requires:	zsh
-BuildArch:	noarch
-
-
-%description zsh
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides scripts needed to run GROMACS with zsh and zsh
-completion.
-
-
-%package csh
-Summary:	GROMACS csh support
-Requires:	csh
-BuildArch:	noarch
-
-
-%description csh
-GROMACS is a versatile and extremely well optimized package to perform
-molecular dynamics computer simulations and subsequent trajectory analysis.
-It is developed for biomolecules like proteins, but the extremely high
-performance means it is used also in several other field like polymer chemistry
-and solid state physics.
-
-This package provides scripts needed to run GROMACS with csh and a completion
-script.
 
 %prep
 %if %{git}
@@ -385,20 +359,20 @@ install -cpm 644 serial/docs/manual/gromacs.pdf %{buildroot}%{_docdir}/gromacs/m
 install -cpm 644 %{SOURCE6} %{buildroot}%{_docdir}/gromacs/README.fedora
 
 pushd %{buildroot}
-# Fix GMXRC file permissions
-chmod a+x ./%{_bindir}/GMXRC ./%{_bindir}/GMXRC.*
+# rm GMXRC, not needed when installed in /usr
+rm ./%{_bindir}/GMXRC*
 
 for bin in demux.pl xplor2gmx.pl; do
 mv ./%{_bindir}/$bin ./%{_bindir}/g_${bin}
 done
 
 # Move completion files around
-chmod a-x ./%{_bindir}/gmx-completion*
-# Bash
-mkdir -p ./%{_sysconfdir}/bash_completion.d
-mv ./%{_bindir}/gmx-completion.bash ./etc/bash_completion.d/gmx-completion
-mv ./%{_bindir}/gmx-completion-gmx.bash ./etc/bash_completion.d/gmx-completion-gmx
-mv ./%{_bindir}/gmx-completion-gmx_d.bash ./etc/bash_completion.d/gmx-completion-gmx_d
+mkdir -p ./%{compdir}
+for bin in gmx{,_d}; do
+cat ./%{_bindir}/gmx-completion{,-$bin}.bash > ./%{compdir}/${bin}
+rm ./%{_bindir}/gmx-completion-${bin}.bash
+done
+rm ./%{_bindir}/gmx-completion.bash
 
 # Remove .la files
 find ./ -name *.la -delete
@@ -451,9 +425,7 @@ done
 %files common
 %{_docdir}/gromacs
 %exclude %{_docdir}/gromacs/manual.pdf
-%config(noreplace) %{_sysconfdir}/bash_completion.d/gmx-completion*
-%{_bindir}/GMXRC
-%{_bindir}/GMXRC.bash
+%{compdir}/gmx*
 %{_mandir}/man1/gmx*.1*
 %{_datadir}/%{name}
 %exclude %{_datadir}/%{name}/template
@@ -486,13 +458,11 @@ done
 %files mpich
 %{_libdir}/mpich/bin/mdrun_mpich*
 
-%files zsh
-%{_bindir}/GMXRC.zsh
-
-%files csh
-%{_bindir}/GMXRC.csh
-
 %changelog
+#for the next bump
+#- drop GMXRC* not needed when installed in /usr, drop zsh/csh package
+#- fix location of bash-completion
+
 * Thu Nov 03 2016 Christoph Junghans <junghans@votca.org> - 2016.1-1
 - Update to 2016.1
 - Drop gromacs-use-system-lmfit.patch, made it upstream
