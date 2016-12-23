@@ -33,7 +33,7 @@
 
 Name:		gromacs
 Version:	2016.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -267,6 +267,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DGMX_EXTERNAL_TNG:BOOL=ON \\\
  -DGMX_EXTERNAL_TINYXML2:BOOL=ON \\\
  -DGMX_LAPACK_USER=satlas \\\
+ -DGMX_USE_RDTSCP=OFF \\\
  -DGMX_SIMD=%{simd} \\\
 
 %if %{with_opencl}
@@ -459,9 +460,10 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
-#for the next bump
-#- drop GMXRC* not needed when installed in /usr, drop zsh/csh package
-#- fix location of bash-completion
+* Fri Dec 23 2016 Christoph Junghans <junghans@votca.org> - 2016.1-2
+- drop GMXRC* not needed when installed in /usr, drop zsh/csh package
+- fix location of bash-completion
+- added GMX_USE_RDTSCP=OFF for docker support
 
 * Thu Nov 03 2016 Christoph Junghans <junghans@votca.org> - 2016.1-1
 - Update to 2016.1
