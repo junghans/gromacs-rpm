@@ -461,9 +461,13 @@ done
 
 %changelog
 * Fri Dec 23 2016 Christoph Junghans <junghans@votca.org> - 2016.1-2
-- drop GMXRC* not needed when installed in /usr, drop zsh/csh package
+- fixed wording description
+- drop dangerous GMXRC* - not needed when installed in /usr
+  would prepent /usr/lib in LD_LIBRARY_PATH
+ -drop otherwise empty zsh/csh package as actual completion is done in 2016
+  nothing left in package after removing GMXRC.*
 - fix location of bash-completion
-- added GMX_USE_RDTSCP=OFF for docker support
+- added GMX_USE_RDTSCP=OFF for docker, which has not support of rdtscp yet
 
 * Thu Nov 03 2016 Christoph Junghans <junghans@votca.org> - 2016.1-1
 - Update to 2016.1
