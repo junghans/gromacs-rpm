@@ -33,7 +33,7 @@
 
 Name:		gromacs
 Version:	2016.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -460,6 +460,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Jan 27 2017 Jonathan Wakely <jwakely@redhat.com> - 2016.1-3
+- Rebuilt for Boost 1.63
+
 * Fri Dec 23 2016 Christoph Junghans <junghans@votca.org> - 2016.1-2
 - fixed wording description
 - drop dangerous GMXRC* - not needed when installed in /usr
