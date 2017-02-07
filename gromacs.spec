@@ -32,8 +32,8 @@
 %endif
 
 Name:		gromacs
-Version:	2016.1
-Release:	2%{?dist}
+Version:	2016.2
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -58,11 +58,8 @@ Source6:	gromacs-README.fedora
 Patch0:		gromacs-dssp-path.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
-# Fix build with system TNG
-Patch8:		gromacs-tng.patch
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
-BuildRequires:	boost-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
 BuildRequires:	hwloc
@@ -242,7 +239,6 @@ This package single and double precision binaries and libraries.
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
 %patch0 -p1 -b .dssp
-%patch8 -p1 -b .tng
 # Delete bundled stuff so that it doesn't get used accidentally
 rm -r src/external/{fftpack,tinyxml2,tng_io,lmfit}
 
@@ -460,6 +456,11 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Tue Feb 07 2017 Christoph Junghans <junghans@votca.org> - 2016.2-1
+- Update to 2016.2
+- Drop boost dependency, not uses anymore
+- Drop gromacs-tng.patch, made it upstream
+
 * Fri Dec 23 2016 Christoph Junghans <junghans@votca.org> - 2016.1-2
 - drop GMXRC* not needed when installed in /usr, drop zsh/csh package
 - fix location of bash-completion
