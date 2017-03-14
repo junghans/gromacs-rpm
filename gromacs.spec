@@ -32,7 +32,7 @@
 %endif
 
 Name:		gromacs
-Version:	2016.2
+Version:	2016.3
 Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
@@ -456,6 +456,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Tue Mar 14 2017 Christoph Junghans <junghans@votca.org> - 2016.3-1
+- Update to 2016.3
+
 * Tue Feb 07 2017 Christoph Junghans <junghans@votca.org> - 2016.2-1
 - Update to 2016.2
 - Drop boost dependency, not uses anymore
