@@ -7,10 +7,14 @@
 %else
 %global with_openmpi 0
 %endif
-# compilation of OpenCL support is failing only on ppc64le
-%ifnarch ppc64le
+
 %global with_opencl 1
-%else
+# compilation of OpenCL support is failing only on ppc64le
+%ifarch ppc64le
+%global with_opencl 0
+%endif
+# don't build opencl on RHEL
+%if 0%{?rhel}
 %global with_opencl 0
 %endif
 
@@ -18,6 +22,8 @@
 %ifarch x86_64
 %global simd SSE2
 %endif
+# binutils on RHEL is too old for these ppe64 and arm simd kernels
+%if 0%{?fedora}
 %ifarch ppc64p7
 %global simd IBM_VMX
 %endif
@@ -29,6 +35,7 @@
 %endif
 %ifarch aarch64
 %global simd ARM_NEON_ASIMD
+%endif
 %endif
 
 Name:		gromacs
@@ -72,10 +79,12 @@ BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
 Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
-BuildRequires:	tinyxml2-devel >= 3.0.0
+BuildRequires:	tinyxml2-devel >= 2.1.0
 BuildRequires:	tng-devel
+%if 0%{?fedora}
 # To get rid of executable stacks
 BuildRequires:	/usr/bin/execstack
+%endif
 BuildRequires:	bash-completion
 %define compdir %(pkg-config --variable=completionsdir bash-completion)
 %if "%{compdir}" == ""
@@ -121,6 +130,7 @@ and solid state physics.
 This package includes architecture independent data and HTML documentation.
 
 
+%if %{with_opencl}
 %package opencl
 Summary:	GROMACS OpenCL kernels
 # suggest installing a GPU-based OpenCL implementation
@@ -137,6 +147,7 @@ performance means it is used also in several other field like polymer chemistry
 and solid state physics.
 
 This package includes the OpenCL kernels.
+%endif
 
 
 %package doc
@@ -374,9 +385,11 @@ rm ./%{_bindir}/gmx-completion.bash
 # Remove .la files
 find ./ -name *.la -delete
 
+%if 0%{?fedora}
 # Get rid of executable stacks
 find ./ -name *.so.* -exec execstack -c {} \;
 popd
+%endif
 
 
 # Post install for libs. MPI packages don't need this.
