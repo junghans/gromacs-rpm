@@ -39,8 +39,8 @@
 %endif
 
 Name:		gromacs
-Version:	2016.3
-Release:	3%{?dist}
+Version:	2016.4
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -469,6 +469,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Sep 15 2017 Christoph Junghans <junghans@votca.org> - 2016.4-1
+- Update to 2016.4
+
 * Wed Aug 02 2017 Fedora Release Engineering <releng@fedoraproject.org> - 2016.3-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
 
