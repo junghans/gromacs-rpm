@@ -1,0 +1,1761 @@
+From b7713bfb76c0bd25ee77c359a2b00d4115c29910 Mon Sep 17 00:00:00 2001
+From: Erik Lindahl <erik@kth.se>
+Date: Mon, 25 Dec 2017 20:20:11 +0100
+Subject: [PATCH] Remove non-portable usage of GMX_ALIGN()
+
+According to the C++ standard, the behavior of alignas()
+is implementation-dependent for all alignments wider than
+the width of native types. At least on Fedora, this
+results in broken aligments both on s390, ARMv7, ARMv8,
+and Power8. Since there does not seem to be any portable
+way to achieve general alignments, this change reverts
+the behavior to use explicit pointer alighments instead.
+
+Fixes #2365.
+
+Change-Id: I9bc7000da44ca905f90783ea9963bf9808d0f99e
+---
+
+diff --git a/src/gromacs/ewald/pme-gather.cpp b/src/gromacs/ewald/pme-gather.cpp
+index 2c9e961..d5b6a50 100644
+--- a/src/gromacs/ewald/pme-gather.cpp
++++ b/src/gromacs/ewald/pme-gather.cpp
+@@ -195,9 +195,11 @@
+     {
+ #ifdef PME_SIMD4_UNALIGNED
+         *S0 = load4U(data-offset);
+-        *S1 = load4U(data-offset+4);
++              *S1 = load4U(data-offset+4);
+ #else
+-        GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  buf_aligned[GMX_SIMD4_WIDTH*2];
++        real   unalignedMem[GMX_SIMD4_WIDTH*3];        // GMX_SIMD4_WIDTH*2 and padding
++        real * buf_aligned = simd4Align(unalignedMem); // size is GMX_SIMD4_WIDTH*2
++
+         /* Copy data to an aligned buffer */
+         for (int i = 0; i < order; i++)
+         {
+diff --git a/src/gromacs/ewald/pme-spline-work.cpp b/src/gromacs/ewald/pme-spline-work.cpp
+index 5859a34..7921d20 100644
+--- a/src/gromacs/ewald/pme-spline-work.cpp
++++ b/src/gromacs/ewald/pme-spline-work.cpp
+@@ -54,7 +54,9 @@
+     pme_spline_work *work;
+ 
+ #ifdef PME_SIMD4_SPREAD_GATHER
+-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  tmp[GMX_SIMD4_WIDTH*2];
++    real             unalignedMem[GMX_SIMD4_WIDTH*3]; // GMX_SIMD4_WIDTH*2 and padding
++    real           * tmp = simd4Align(unalignedMem);  // size is GMX_SIMD4_WIDTH*2
++
+     Simd4Real        zero_S;
+     Simd4Real        real_mask_S0, real_mask_S1;
+     int              of, i;
+diff --git a/src/gromacs/ewald/pme-spread.cpp b/src/gromacs/ewald/pme-spread.cpp
+index b3db6c3..0bed8cb 100644
+--- a/src/gromacs/ewald/pme-spread.cpp
++++ b/src/gromacs/ewald/pme-spread.cpp
+@@ -329,7 +329,8 @@
+     int            offx, offy, offz;
+ 
+ #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
+-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH*2];
++    real   unalignedMem[GMX_SIMD4_WIDTH*3];        // GMX_SIMD4_WIDTH*2 and padding
++    real * thz_aligned = simd4Align(unalignedMem); // size is GMX_SIMD4_WIDTH*2
+ #endif
+ 
+     pnx = pmegrid->s[XX];
+diff --git a/src/gromacs/listed-forces/bonded.cpp b/src/gromacs/listed-forces/bonded.cpp
+index c9d7b45..fd120ac 100644
+--- a/src/gromacs/listed-forces/bonded.cpp
++++ b/src/gromacs/listed-forces/bonded.cpp
+@@ -982,10 +982,13 @@
+     const int            nfa1 = 4;
+     int                  i, iu, s;
+     int                  type;
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[2*GMX_SIMD_REAL_WIDTH];
++    std::int32_t         unalignedMemI[GMX_SIMD_REAL_WIDTH*4];     // GMX_SIMD_REAL_WIDTH*3 + padding
++    std::int32_t *       ai = simdAlign(unalignedMemI);            // size GMX_SIMD_REAL_WIDTH
++    std::int32_t *       aj = ai + GMX_SIMD_REAL_WIDTH;            // size GMX_SIMD_REAL_WIDTH
++    std::int32_t *       ak = ai + GMX_SIMD_REAL_WIDTH*2;          // size GMX_SIMD_REAL_WIDTH
++    real                 unalignedMemR[GMX_SIMD_REAL_WIDTH*12];    // GMX_SIMD_REAL_WIDTH*(2+9) + padding
++    real *               coeff    = simdAlign(unalignedMemR);      // size GMX_SIMD_REAL_WIDTH*2
++    real *               pbc_simd = coeff + GMX_SIMD_REAL_WIDTH*2; // size GMX_SIMD_REAL_WIDTH*9
+     SimdReal             deg2rad_S(DEG2RAD);
+     SimdReal             xi_S, yi_S, zi_S;
+     SimdReal             xj_S, yj_S, zj_S;
+@@ -1005,7 +1008,6 @@
+     SimdReal             cik_S, cii_S, ckk_S;
+     SimdReal             f_ix_S, f_iy_S, f_iz_S;
+     SimdReal             f_kx_S, f_ky_S, f_kz_S;
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+ 
+     set_pbc_simd(pbc, pbc_simd);
+ 
+@@ -1309,11 +1311,13 @@
+                               int gmx_unused *global_atom_index)
+ {
+     constexpr int            nfa1 = 4;
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[4*GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   pbc_simd[9*GMX_SIMD_REAL_WIDTH];
++    std::int32_t             unalignedMemI[GMX_SIMD_REAL_WIDTH*4];     // GMX_SIMD_REAL_WIDTH*3 + padding
++    std::int32_t     *       ai = simdAlign(unalignedMemI);            // size GMX_SIMD_REAL_WIDTH
++    std::int32_t     *       aj = ai + GMX_SIMD_REAL_WIDTH;            // size GMX_SIMD_REAL_WIDTH
++    std::int32_t     *       ak = ai + GMX_SIMD_REAL_WIDTH*2;          // size GMX_SIMD_REAL_WIDTH
++    real                     unalignedMemR[GMX_SIMD_REAL_WIDTH*14];    // GMX_SIMD_REAL_WIDTH*(4+9) + padding
++    real     *               coeff    = simdAlign(unalignedMemR);      // size GMX_SIMD_REAL_WIDTH*4
++    real     *               pbc_simd = coeff + GMX_SIMD_REAL_WIDTH*4; // size GMX_SIMD_REAL_WIDTH*9
+ 
+     set_pbc_simd(pbc, pbc_simd);
+ 
+@@ -1995,11 +1999,14 @@
+     const int             nfa1 = 5;
+     int                   i, iu, s;
+     int                   type;
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    al[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  buf[3*GMX_SIMD_REAL_WIDTH];
++    std::int32_t          unalignedMemI[GMX_SIMD_REAL_WIDTH*5];   // GMX_SIMD_REAL_WIDTH*4 + padding
++    std::int32_t  *       ai = simdAlign(unalignedMemI);          // size GMX_SIMD_REAL_WIDTH
++    std::int32_t  *       aj = ai + GMX_SIMD_REAL_WIDTH;          // size GMX_SIMD_REAL_WIDTH
++    std::int32_t  *       ak = ai + GMX_SIMD_REAL_WIDTH*2;        // size GMX_SIMD_REAL_WIDTH
++    std::int32_t  *       al = ai + GMX_SIMD_REAL_WIDTH*3;        // size GMX_SIMD_REAL_WIDTH
++    real                  unalignedMemR[GMX_SIMD_REAL_WIDTH*13];  // GMX_SIMD_REAL_WIDTH*(9+3) + padding
++    real  *               buf      = simdAlign(unalignedMemR);    // size GMX_SIMD_REAL_WIDTH*3
++    real  *               pbc_simd = buf + GMX_SIMD_REAL_WIDTH*3; // size GMX_SIMD_REAL_WIDTH*9
+     real                 *cp, *phi0, *mult;
+     SimdReal              deg2rad_S(DEG2RAD);
+     SimdReal              p_S, q_S;
+@@ -2011,7 +2018,6 @@
+     SimdReal              sin_S, cos_S;
+     SimdReal              mddphi_S;
+     SimdReal              sf_i_S, msf_l_S;
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+ 
+     /* Extract aligned pointer for parameters and variables */
+     cp    = buf + 0*GMX_SIMD_REAL_WIDTH;
+@@ -2110,12 +2116,14 @@
+     const int             nfa1 = 5;
+     int                   i, iu, s, j;
+     int                   type;
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    al[GMX_SIMD_REAL_WIDTH];
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) parm[NR_RBDIHS*GMX_SIMD_REAL_WIDTH];
+-
++    std::int32_t          unalignedMemI[GMX_SIMD_REAL_WIDTH*5];               // GMX_SIMD_REAL_WIDTH*4 + padding
++    std::int32_t *        ai = simdAlign(unalignedMemI);                      // size GMX_SIMD_REAL_WIDTH
++    std::int32_t *        aj = ai + GMX_SIMD_REAL_WIDTH;                      // size GMX_SIMD_REAL_WIDTH
++    std::int32_t *        ak = ai + GMX_SIMD_REAL_WIDTH*2;                    // size GMX_SIMD_REAL_WIDTH
++    std::int32_t *        al = ai + GMX_SIMD_REAL_WIDTH*3;                    // size GMX_SIMD_REAL_WIDTH
++    real                  unalignedMemR[GMX_SIMD_REAL_WIDTH*(NR_RBDIHS+9+1)]; // GMX_SIMD_REAL_WIDTH*(NRRBDIHS+9) + padding
++    real *                parm     = simdAlign(unalignedMemR);                // size GMX_SIMD_REAL_WIDTH*NR_RBDIHS
++    real *                pbc_simd = parm + GMX_SIMD_REAL_WIDTH*NR_RBDIHS;    // size GMX_SIMD_REAL_WIDTH*9
+     SimdReal              p_S, q_S;
+     SimdReal              phi_S;
+     SimdReal              ddphi_S, cosfac_S;
+@@ -2125,7 +2133,6 @@
+     SimdReal              parm_S, c_S;
+     SimdReal              sin_S, cos_S;
+     SimdReal              sf_i_S, msf_l_S;
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+ 
+     SimdReal              pi_S(M_PI);
+     SimdReal              one_S(1.0);
+diff --git a/src/gromacs/listed-forces/pairs.cpp b/src/gromacs/listed-forces/pairs.cpp
+index 6d0d179..ea2e421 100644
+--- a/src/gromacs/listed-forces/pairs.cpp
++++ b/src/gromacs/listed-forces/pairs.cpp
+@@ -550,11 +550,19 @@
+     T         twelve(12);
+     T         ef(scale_factor);
+ 
+-    const int align = 16;
+-    GMX_ASSERT(pack_size <= align, "align should be increased");
+-    GMX_ALIGNED(int,  align)  ai[pack_size];
+-    GMX_ALIGNED(int,  align)  aj[pack_size];
+-    GMX_ALIGNED(real, align)  coeff[3*pack_size];
++#if GMX_SIMD_HAVE_REAL
++    // No matter what the pack_size is, we only need temporary storage to be
++    // aligned to match the SIMD load/store requirements.
++    std::int32_t   unalignedMemI[pack_size*2 + GMX_SIMD_REAL_WIDTH];
++    std::int32_t * ai = simdAlign(unalignedMemI);
++    std::int32_t * aj = ai + pack_size;
++    real           unalignedMemR[3*pack_size + GMX_SIMD_REAL_WIDTH];
++    real *         coeff = simdAlign(unalignedMemR); // size 3*pack_size
++#else
++    std::int32_t   ai[pack_size];
++    std::int32_t   aj[pack_size];
++    real           coeff[3*pack_size];
++#endif
+ 
+     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
+     for (int i = 0; i < nbonds; i += pack_size*nfa1)
+@@ -658,7 +666,8 @@
+          * at once for the angles and dihedrals as well.
+          */
+ #if GMX_SIMD
+-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9*GMX_SIMD_REAL_WIDTH];
++        real   unalignedMem[GMX_SIMD_REAL_WIDTH*10];
++        real * pbc_simd = simdAlign(unalignedMem);
+         set_pbc_simd(pbc, pbc_simd);
+ 
+         do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,
+diff --git a/src/gromacs/mdlib/clincs.cpp b/src/gromacs/mdlib/clincs.cpp
+index 336e75b..b8686f2 100644
+--- a/src/gromacs/mdlib/clincs.cpp
++++ b/src/gromacs/mdlib/clincs.cpp
+@@ -441,7 +441,10 @@
+ {
+     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
+ 
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH) offset2[GMX_SIMD_REAL_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*4];
++    std::int32_t * offset0 = simdAlign(unalignedMem);
++    std::int32_t * offset1 = offset0 + GMX_SIMD_REAL_WIDTH;
++    std::int32_t * offset2 = offset0 + GMX_SIMD_REAL_WIDTH*2;
+ 
+     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+     {
+@@ -454,8 +457,6 @@
+         SimdReal x1_S, y1_S, z1_S;
+         SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
+         SimdReal fx_S, fy_S, fz_S, ip_S, rhs_S;
+-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset0[GMX_SIMD_REAL_WIDTH];
+-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset1[GMX_SIMD_REAL_WIDTH];
+ 
+         for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+         {
+@@ -537,7 +538,8 @@
+      * The only difference is that we always call pbc code, as with SIMD
+      * the overhead of pbc computation (when not needed) is small.
+      */
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
++    real   unalignedMem[GMX_SIMD_REAL_WIDTH*10];
++    real * pbc_simd = simdAlign(unalignedMem);
+ 
+     /* Convert the pbc struct for SIMD */
+     set_pbc_simd(pbc, pbc_simd);
+@@ -695,7 +697,10 @@
+                   real * gmx_restrict       sol)
+ {
+     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH) offset2[GMX_SIMD_REAL_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*4];
++    std::int32_t * offset0 = simdAlign(unalignedMem);
++    std::int32_t * offset1 = offset0 + GMX_SIMD_REAL_WIDTH;
++    std::int32_t * offset2 = offset0 + GMX_SIMD_REAL_WIDTH*2;
+ 
+     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+     {
+@@ -708,8 +713,6 @@
+         SimdReal x1_S, y1_S, z1_S;
+         SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
+         SimdReal rxp_S, ryp_S, rzp_S, ip_S, rhs_S;
+-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset0[GMX_SIMD_REAL_WIDTH];
+-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset1[GMX_SIMD_REAL_WIDTH];
+ 
+         for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+         {
+@@ -824,6 +827,10 @@
+ 
+     int             bs;
+ 
++    std::int32_t    unalignedMem[GMX_SIMD_REAL_WIDTH*3];
++    std::int32_t  * offset0 = simdAlign(unalignedMem);
++    std::int32_t  * offset1 = offset0 + GMX_SIMD_REAL_WIDTH;
++
+     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
+ 
+     /* Initialize all to FALSE */
+@@ -835,8 +842,6 @@
+         SimdReal x1_S, y1_S, z1_S;
+         SimdReal rx_S, ry_S, rz_S, n2_S;
+         SimdReal len_S, len2_S, dlen2_S, lc_S, blc_S;
+-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset0[GMX_SIMD_REAL_WIDTH];
+-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset1[GMX_SIMD_REAL_WIDTH];
+ 
+         for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+         {
+@@ -923,7 +928,8 @@
+      * The only difference is that we always call pbc code, as with SIMD
+      * the overhead of pbc computation (when not needed) is small.
+      */
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
++    real   unalignedMem[GMX_SIMD_REAL_WIDTH*10];
++    real * pbc_simd = simdAlign(unalignedMem);
+ 
+     /* Convert the pbc struct for SIMD */
+     set_pbc_simd(pbc, pbc_simd);
+diff --git a/src/gromacs/mdlib/csettle.cpp b/src/gromacs/mdlib/csettle.cpp
+index 34a011a..fb71292 100644
+--- a/src/gromacs/mdlib/csettle.cpp
++++ b/src/gromacs/mdlib/csettle.cpp
+@@ -850,7 +850,9 @@
+     if (settled->bUseSimd)
+     {
+         /* Convert the pbc struct for SIMD */
+-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbcSimd[9*GMX_SIMD_REAL_WIDTH];
++        real   unalignedMem[GMX_SIMD_REAL_WIDTH*10];
++        real * pbcSimd = simdAlign(unalignedMem);
++
+         set_pbc_simd(pbc, pbcSimd);
+ 
+         settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,
+diff --git a/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h b/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h
+index 3dfc89b..1671e30 100644
+--- a/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h
++++ b/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h
+@@ -278,8 +278,9 @@
+ 
+ #ifdef COUNT_PAIRS
+     {
+-        int  i, j;
+-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  tmp[GMX_SIMD_REAL_WIDTH];
++        int    i, j;
++        real   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++        real * tmp = simdAlign(unalignedMem);
+ 
+         for (i = 0; i < UNROLLI; i += 2)
+         {
+diff --git a/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h b/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h
+index 2aa9944..d401715 100644
+--- a/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h
++++ b/src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h
+@@ -138,8 +138,9 @@
+     SimdReal          hsig_i_S2, seps_i_S2;
+ #else
+ #ifdef FIX_LJ_C
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  pvdw_c6[2*UNROLLI*UNROLLJ];
+-    real  *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
++    real              unalignedMem[2*UNROLLI*UNROLLJ + GMX_SIMD_REAL_WIDTH];
++    real *            pvdw_c6  = simdAlign(unalignedMem);
++    real *            pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+ #endif
+ 
+ #if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
+diff --git a/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h b/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h
+index f0b0b7a..bcf2675 100644
+--- a/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h
++++ b/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h
+@@ -362,8 +362,9 @@
+ 
+ #ifdef COUNT_PAIRS
+     {
+-        int  i, j;
+-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  tmp[2*GMX_SIMD_REAL_WIDTH];
++        int    i, j;
++        real   unalignedMem[GMX_SIMD_REAL_WIDTH*3];
++        real * tmp = simdAlign(unalignedMem);
+ 
+         for (i = 0; i < UNROLLI; i++)
+         {
+diff --git a/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h b/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h
+index 167379c..ae627b6 100644
+--- a/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h
++++ b/src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h
+@@ -334,8 +334,9 @@
+     x                   = nbat->x;
+ 
+ #ifdef FIX_LJ_C
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  pvdw_c6[2*UNROLLI*UNROLLJ];
+-    real *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
++    real   unalignedMem[2*UNROLLI*UNROLLJ + GMX_SIMD_REAL_WIDTH];
++    real * pvdw_c6  = simdAlign(unalignedMem);
++    real * pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+ 
+     for (int jp = 0; jp < UNROLLJ; jp++)
+     {
+diff --git a/src/gromacs/simd/impl_arm_neon/impl_arm_neon_util_float.h b/src/gromacs/simd/impl_arm_neon/impl_arm_neon_util_float.h
+index d2919f4..9239529 100644
+--- a/src/gromacs/simd/impl_arm_neon/impl_arm_neon_util_float.h
++++ b/src/gromacs/simd/impl_arm_neon/impl_arm_neon_util_float.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -286,7 +286,8 @@
+                              SimdFloat *    v2,
+                              SimdFloat *    v3)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH)  ioffset[GMX_SIMD_FINT32_WIDTH];
++    // Arm does not mind unaligned memory
++    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
+ 
+     assert(std::size_t(base) % 16 == 0);
+     assert(align % 4 == 0);
+@@ -302,7 +303,8 @@
+                              SimdFloat *     v0,
+                              SimdFloat *     v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH)  ioffset[GMX_SIMD_FINT32_WIDTH];
++    // Arm does not mind unaligned memory
++    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
+ 
+     store(ioffset, offset);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+@@ -317,7 +319,8 @@
+                               SimdFloat *    v0,
+                               SimdFloat *    v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH)  ioffset[GMX_SIMD_FINT32_WIDTH];
++    // Arm does not mind unaligned memory
++    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
+ 
+     store(ioffset, offset);
+     v0->simdInternal_ = vcombine_f32(vld1_f32( base + align * ioffset[0] ),
+diff --git a/src/gromacs/simd/impl_arm_neon_asimd/impl_arm_neon_asimd_util_double.h b/src/gromacs/simd/impl_arm_neon_asimd/impl_arm_neon_asimd_util_double.h
+index 45abcbb..2a5bf7e 100644
+--- a/src/gromacs/simd/impl_arm_neon_asimd/impl_arm_neon_asimd_util_double.h
++++ b/src/gromacs/simd/impl_arm_neon_asimd/impl_arm_neon_asimd_util_double.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -225,7 +225,8 @@
+                              SimdDouble *    v2,
+                              SimdDouble *    v3)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
++    // Arm does not mind unaligned memory
++    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+ 
+     assert(std::size_t(base) % 16 == 0);
+     assert(align % 2 == 0);
+@@ -242,7 +243,8 @@
+                              SimdDouble *    v0,
+                              SimdDouble *    v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
++    // Arm does not mind unaligned memory
++    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+ 
+     assert(std::size_t(base) % 16 == 0);
+     assert(align % 2 == 0);
+@@ -258,7 +260,8 @@
+                               SimdDouble *    v0,
+                               SimdDouble *    v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
++    // Arm does not mind unaligned memory
++    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+ 
+     vst1_s32(ioffset, offset.simdInternal_);
+ 
+diff --git a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_double.h b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_double.h
+index dc20d78..cdaef23 100644
+--- a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_double.h
++++ b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_double.h
+@@ -75,7 +75,11 @@
+ 
+         SimdDInt32(std::int32_t i)
+         {
+-            GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) idata[GMX_SIMD_DINT32_WIDTH];
++            std::int32_t   unalignedMem[GMX_SIMD_DINT32_WIDTH*2];
++            // Float and double are the same width for QPX, so simdAlign() will
++            // work with integers no matter what the current precision is
++            std::int32_t * idata = simdAlign(unalignedMem);
++
+             idata[0]      = i;
+             simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
+         }
+@@ -332,8 +336,13 @@
+ static inline SimdDouble
+ frexp(SimdDouble value, SimdDInt32 * exponent)
+ {
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) rdata[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)    idata[GMX_SIMD_DOUBLE_WIDTH];
++    double         unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
++    double       * rdata = simdAlign(unalignedMem);
++
++    std::int32_t   unalignedMemI[GMX_SIMD_DOUBLE_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * idata = simdAlign(unalignedMemI);
+ 
+     vec_st(value.simdInternal_, 0, rdata);
+ 
+@@ -352,8 +361,13 @@
+ static inline SimdDouble
+ ldexp(SimdDouble value, SimdDInt32 exponent)
+ {
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) rdata[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)    idata[GMX_SIMD_DOUBLE_WIDTH];
++    double         unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
++    double       * rdata = simdAlign(unalignedMem);
++
++    std::int32_t   unalignedMemI[GMX_SIMD_DOUBLE_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * idata = simdAlign(unalignedMemI);
+ 
+     vec_st(value.simdInternal_,    0, rdata);
+     vec_st(exponent.simdInternal_, 0, idata);
+diff --git a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_float.h b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_float.h
+index 12ffdbd..0977a64 100644
+--- a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_float.h
++++ b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_simd_float.h
+@@ -72,7 +72,11 @@
+ 
+         SimdFInt32(std::int32_t i)
+         {
+-            GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) idata[GMX_SIMD_FINT32_WIDTH];
++            std::int32_t   unalignedMem[GMX_SIMD_FINT32_WIDTH*2];
++            // Float and double are the same width for QPX, so simdAlign() will
++            // work with integers no matter what the current precision is
++            std::int32_t * idata = simdAlign(unalignedMem);
++
+             idata[0]      = i;
+             simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
+         }
+@@ -329,8 +333,12 @@
+ static inline SimdFloat
+ frexp(SimdFloat value, SimdFInt32 * exponent)
+ {
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
++    float          unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    float *        rdata = simdAlign(unalignedMem);
++    std::int32_t   unalignedMemI[GMX_SIMD_FLOAT_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * idata = simdAlign(unalignedMemI);
+ 
+     vec_st(value.simdInternal_, 0, rdata);
+ 
+@@ -349,8 +357,13 @@
+ static inline SimdFloat
+ ldexp(SimdFloat value, SimdFInt32 exponent)
+ {
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
++    float          unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    float *        rdata = simdAlign(unalignedMem);
++
++    std::int32_t   unalignedMemI[GMX_SIMD_FLOAT_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * idata = simdAlign(unalignedMemI);
+ 
+     vec_st(value.simdInternal_,    0, rdata);
+     vec_st(exponent.simdInternal_, 0, idata);
+diff --git a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_double.h b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_double.h
+index 5a220c4..5446fdc 100644
+--- a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_double.h
++++ b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_double.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -143,9 +143,10 @@
+                        SimdDouble            v1,
+                        SimdDouble            v2)
+ {
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m0[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m1[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m2[GMX_SIMD_DOUBLE_WIDTH];
++    double   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*4];
++    double * m0 = simdAlign(unalignedMem);
++    double * m1 = m0 + GMX_SIMD_DOUBLE_WIDTH;
++    double * m2 = m0 + GMX_SIMD_DOUBLE_WIDTH*2;
+ 
+     store(m0, v0);
+     store(m1, v1);
+@@ -193,9 +194,10 @@
+     }
+     else
+     {
+-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m0[GMX_SIMD_DOUBLE_WIDTH];
+-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m1[GMX_SIMD_DOUBLE_WIDTH];
+-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m2[GMX_SIMD_DOUBLE_WIDTH];
++        double   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*4];
++        double * m0 = simdAlign(unalignedMem);
++        double * m1 = m0 + GMX_SIMD_DOUBLE_WIDTH;
++        double * m2 = m0 + GMX_SIMD_DOUBLE_WIDTH*2;
+ 
+         store(m0, v0);
+         store(m1, v1);
+@@ -244,9 +246,10 @@
+     }
+     else
+     {
+-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m0[GMX_SIMD_DOUBLE_WIDTH];
+-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m1[GMX_SIMD_DOUBLE_WIDTH];
+-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m2[GMX_SIMD_DOUBLE_WIDTH];
++        double   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*4];
++        double * m0 = simdAlign(unalignedMem);
++        double * m1 = m0 + GMX_SIMD_DOUBLE_WIDTH;
++        double * m2 = m0 + GMX_SIMD_DOUBLE_WIDTH*2;
+ 
+         store(m0, v0);
+         store(m1, v1);
+@@ -287,7 +290,10 @@
+                              SimdDouble *     v2,
+                              SimdDouble *     v3)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)   ioffset[GMX_SIMD_DOUBLE_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * ioffset = simdAlign(unalignedMem);
+ 
+     store(ioffset, simdoffset);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
+@@ -300,7 +306,10 @@
+                              SimdDouble *     v0,
+                              SimdDouble *     v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)   ioffset[GMX_SIMD_DOUBLE_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * ioffset = simdAlign(unalignedMem);
+ 
+     store(ioffset, simdoffset);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+diff --git a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_float.h b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_float.h
+index 2e12fab..39644eb 100644
+--- a/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_float.h
++++ b/src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_util_float.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -143,9 +143,10 @@
+                        SimdFloat            v1,
+                        SimdFloat            v2)
+ {
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m0[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m1[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m2[GMX_SIMD_FLOAT_WIDTH];
++    float   unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
++    float * m0 = simdAlign(unalignedMem);
++    float * m1 = m0 + GMX_SIMD_FLOAT_WIDTH;
++    float * m2 = m0 + GMX_SIMD_FLOAT_WIDTH*2;
+ 
+     store(m0, v0);
+     store(m1, v1);
+@@ -193,9 +194,10 @@
+     }
+     else
+     {
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m0[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m1[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m2[GMX_SIMD_FLOAT_WIDTH];
++        float   unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
++        float * m0 = simdAlign(unalignedMem);
++        float * m1 = m0 + GMX_SIMD_FLOAT_WIDTH;
++        float * m2 = m0 + GMX_SIMD_FLOAT_WIDTH*2;
+ 
+         store(m0, v0);
+         store(m1, v1);
+@@ -244,9 +246,10 @@
+     }
+     else
+     {
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m0[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m1[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m2[GMX_SIMD_FLOAT_WIDTH];
++        float   unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
++        float * m0 = simdAlign(unalignedMem);
++        float * m1 = m0 + GMX_SIMD_FLOAT_WIDTH;
++        float * m2 = m0 + GMX_SIMD_FLOAT_WIDTH*2;
+ 
+         store(m0, v0);
+         store(m1, v1);
+@@ -287,7 +290,10 @@
+                              SimdFloat *    v2,
+                              SimdFloat *    v3)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)   ioffset[GMX_SIMD_FLOAT_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * ioffset = simdAlign(unalignedMem);
+ 
+     store(ioffset, simdoffset);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
+@@ -300,7 +306,10 @@
+                              SimdFloat *     v0,
+                              SimdFloat *     v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)   ioffset[GMX_SIMD_FLOAT_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // Float and double are the same width for QPX, so simdAlign() will
++    // work with integers no matter what the current precision is
++    std::int32_t * ioffset = simdAlign(unalignedMem);
+ 
+     store(ioffset, simdoffset);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+diff --git a/src/gromacs/simd/impl_ibm_vmx/impl_ibm_vmx_util_float.h b/src/gromacs/simd/impl_ibm_vmx/impl_ibm_vmx_util_float.h
+index 95690c3..1e1642a 100644
+--- a/src/gromacs/simd/impl_ibm_vmx/impl_ibm_vmx_util_float.h
++++ b/src/gromacs/simd/impl_ibm_vmx/impl_ibm_vmx_util_float.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -273,9 +273,10 @@
+     }
+     else
+     {
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata0[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata1[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata2[GMX_SIMD_FLOAT_WIDTH];
++        float    unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
++        float *  rdata0 = simdAlign(unalignedMem);
++        float *  rdata1 = rdata0 + GMX_SIMD_FLOAT_WIDTH;
++        float *  rdata2 = rdata0 + GMX_SIMD_FLOAT_WIDTH*2;
+ 
+         vec_st(v0.simdInternal_, 0, rdata0);
+         vec_st(v1.simdInternal_, 0, rdata1);
+@@ -323,9 +324,10 @@
+     }
+     else
+     {
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata0[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata1[GMX_SIMD_FLOAT_WIDTH];
+-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata2[GMX_SIMD_FLOAT_WIDTH];
++        float    unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
++        float *  rdata0 = simdAlign(unalignedMem);
++        float *  rdata1 = rdata0 + GMX_SIMD_FLOAT_WIDTH;
++        float *  rdata2 = rdata0 + GMX_SIMD_FLOAT_WIDTH*2;
+ 
+         vec_st(v0.simdInternal_, 0, rdata0);
+         vec_st(v1.simdInternal_, 0, rdata1);
+@@ -371,7 +373,9 @@
+                              SimdFloat *    v2,
+                              SimdFloat *    v3)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // VMX only provides single precision, so it's safe to use simdAlign() here
++    std::int32_t * ioffset = simdAlign(unalignedMem);
+ 
+     vec_st( offset.simdInternal_, 0, ioffset);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
+@@ -384,7 +388,9 @@
+                              SimdFloat *     v0,
+                              SimdFloat *     v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // VMX only provides single precision, so it's safe to use simdAlign() here
++    std::int32_t * ioffset = simdAlign(unalignedMem);
+ 
+     vec_st( offset.simdInternal_, 0, ioffset);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+diff --git a/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_double.h b/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_double.h
+index 868b40f..0a1f4b3 100644
+--- a/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_double.h
++++ b/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_double.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -249,7 +249,8 @@
+                              SimdDouble *    v2,
+                              SimdDouble *    v3)
+ {
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
++    // Our VSX SimdDInt32 load/store routines do not require aligned memory
++    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+ 
+     store(ioffset, offset );
+     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
+@@ -262,7 +263,8 @@
+                              SimdDouble *      v0,
+                              SimdDouble *      v1)
+ {
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
++    // Our VSX SimdDInt32 load/store routines do not require aligned memory
++    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+ 
+     store(ioffset, offset );
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+@@ -276,7 +278,8 @@
+                               SimdDouble *    v0,
+                               SimdDouble *    v1)
+ {
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
++    // Our VSX SimdDInt32 load/store routines do not require aligned memory
++    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+ 
+     store(ioffset, offset );
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+diff --git a/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_float.h b/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_float.h
+index 8863765..e992219 100644
+--- a/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_float.h
++++ b/src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_util_float.h
+@@ -330,7 +330,8 @@
+                              SimdFloat *    v2,
+                              SimdFloat *    v3)
+ {
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
++    // Our VSX SimdFInt32 load/store routines do not require aligned memory
++    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
+ 
+     store(ioffset, offset );
+     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
+@@ -343,7 +344,8 @@
+                              SimdFloat *     v0,
+                              SimdFloat *     v1)
+ {
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
++    // Our VSX SimdFInt32 load/store routines do not require aligned memory
++    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
+ 
+     store(ioffset, offset );
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+@@ -356,7 +358,8 @@
+                               SimdFloat *    v0,
+                               SimdFloat *    v1)
+ {
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
++    // Our VSX SimdFInt32 load/store routines do not require aligned memory
++    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
+ 
+     store(ioffset, offset );
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+diff --git a/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_double.h b/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_double.h
+index a3cefcb..1c0a505 100644
+--- a/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_double.h
++++ b/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_double.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -331,7 +331,11 @@
+     assert(std::size_t(base) % 32 == 0);
+     assert(align % 4 == 0);
+ 
+-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
++    // We cannot use simdAlign(), since SimdDInt32 might not be identical to SimdInt32
++    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_DOUBLE_WIDTH-1) &
++                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(std::int32_t)-1)));
++
+     _mm_store_si128( reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
+ 
+     v0->simdInternal_ = _mm256_load_pd(base + align * ioffset[0]);
+@@ -355,7 +359,11 @@
+     assert(std::size_t(base) % 16 == 0);
+     assert(align % 2 == 0);
+ 
+-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
++    // We cannot use simdAlign(), since SimdDInt32 might not be identical to SimdInt32
++    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_DOUBLE_WIDTH-1) &
++                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(std::int32_t)-1)));
++
+     _mm_store_si128( reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
+ 
+     t1  = _mm_load_pd(base + align * ioffset[0]);
+@@ -376,10 +384,14 @@
+                               SimdDouble *    v0,
+                               SimdDouble *    v1)
+ {
+-    __m128d t1, t2, t3, t4;
+-    __m256d tA, tB;
++    __m128d        t1, t2, t3, t4;
++    __m256d        tA, tB;
+ 
+-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
++    // We cannot use simdAlign(), since SimdDInt32 might not be identical to SimdInt32
++    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_DOUBLE_WIDTH-1) &
++                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(std::int32_t)-1)));
++
+     _mm_store_si128( reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
+ 
+     t1   = _mm_loadu_pd(base + align * ioffset[0]);
+diff --git a/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_float.h b/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_float.h
+index 2eebda9..3641cad 100644
+--- a/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_float.h
++++ b/src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_float.h
+@@ -484,7 +484,11 @@
+                              SimdFloat *    v2,
+                              SimdFloat *    v3)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * offset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                             ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
+     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
+     gatherLoadTranspose<align>(base, offset, v0, v1, v2, v3);
+ }
+@@ -496,7 +500,11 @@
+                              SimdFloat *     v0,
+                              SimdFloat *     v1)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * offset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                             ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
+     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
+     gatherLoadTranspose<align>(base, offset, v0, v1);
+ }
+@@ -509,10 +517,14 @@
+                               SimdFloat *    v0,
+                               SimdFloat *    v1)
+ {
+-    __m128 t1, t2, t3, t4, t5, t6, t7, t8;
+-    __m256 tA, tB, tC, tD;
++    __m128         t1, t2, t3, t4, t5, t6, t7, t8;
++    __m256         tA, tB, tC, tD;
+ 
+-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * offset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                             ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
+     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
+ 
+     t1  = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64 *>( base + align * offset[0] ) );
+diff --git a/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_double.h b/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_double.h
+index 3ff77c6..59b65b1 100644
+--- a/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_double.h
++++ b/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_double.h
+@@ -150,8 +150,11 @@
+                       SimdDouble          v1,
+                       SimdDouble          v2)
+ {
+-    __m512d t[4], t5, t6, t7, t8;
+-    GMX_ALIGNED(std::int64_t, 8)    o[8];
++    __m512d        t[4], t5, t6, t7, t8;
++    std::int64_t   unalignedMem[8*2]; // 8*64-bit integers in AVX-512 SIMD register + padding
++    std::int64_t * o = reinterpret_cast<std::int64_t *>(reinterpret_cast<std::size_t>(unalignedMem+8-1) &
++                                                        ~(reinterpret_cast<std::size_t>(8*sizeof(std::int64_t)-1)));
++
+     //TODO: should use fastMultiply
+     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
+     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+@@ -205,8 +208,11 @@
+                       SimdDouble          v1,
+                       SimdDouble          v2)
+ {
+-    __m512d t[4], t5, t6, t7, t8;
+-    GMX_ALIGNED(std::int64_t, 8)    o[8];
++    __m512d        t[4], t5, t6, t7, t8;
++    std::int64_t   unalignedMem[8*2]; // 8*64-bit integers in AVX-512 SIMD register + padding
++    std::int64_t * o = reinterpret_cast<std::int64_t *>(reinterpret_cast<std::size_t>(unalignedMem+8-1) &
++                                                        ~(reinterpret_cast<std::size_t>(8*sizeof(std::int64_t)-1)));
++
+     //TODO: should use fastMultiply
+     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
+     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+diff --git a/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_float.h b/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_float.h
+index 61548bb..6ab7d3a 100644
+--- a/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_float.h
++++ b/src/gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_float.h
+@@ -152,9 +152,13 @@
+                       SimdFloat            v1,
+                       SimdFloat            v2)
+ {
+-    __m512 t[4], t5, t6, t7, t8;
+-    int    i;
+-    GMX_ALIGNED(std::int32_t, 16)    o[16];
++    __m512         t[4], t5, t6, t7, t8;
++    int            i;
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * o = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                        ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
+     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
+     if (align < 4)
+     {
+@@ -224,9 +228,13 @@
+                       SimdFloat            v1,
+                       SimdFloat            v2)
+ {
+-    __m512 t[4], t5, t6, t7, t8;
+-    int    i;
+-    GMX_ALIGNED(std::int32_t, 16)    o[16];
++    __m512         t[4], t5, t6, t7, t8;
++    int            i;
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * o = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                        ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
+     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
+     if (align < 4)
+     {
+diff --git a/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_double.h b/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_double.h
+index 62e0720..ddf6d96 100644
+--- a/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_double.h
++++ b/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_double.h
+@@ -235,9 +235,10 @@
+                       SimdDouble          v1,
+                       SimdDouble          v2)
+ {
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
++    double    unalignedMem[GMX_SIMD_DOUBLE_WIDTH*4];
++    double *  rdata0 = simdAlign(unalignedMem);
++    double *  rdata1 = rdata0 + GMX_SIMD_DOUBLE_WIDTH;
++    double *  rdata2 = rdata0 + GMX_SIMD_DOUBLE_WIDTH*2;
+ 
+     store(rdata0, v0);
+     store(rdata1, v1);
+@@ -259,9 +260,10 @@
+                       SimdDouble          v1,
+                       SimdDouble          v2)
+ {
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
++    double    unalignedMem[GMX_SIMD_DOUBLE_WIDTH*4];
++    double *  rdata0 = simdAlign(unalignedMem);
++    double *  rdata1 = rdata0 + GMX_SIMD_DOUBLE_WIDTH;
++    double *  rdata2 = rdata0 + GMX_SIMD_DOUBLE_WIDTH*2;
+ 
+     store(rdata0, v0);
+     store(rdata1, v1);
+diff --git a/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_float.h b/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_float.h
+index 48b2a9f..bd69f04 100644
+--- a/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_float.h
++++ b/src/gromacs/simd/impl_x86_mic/impl_x86_mic_util_float.h
+@@ -239,9 +239,10 @@
+                       SimdFloat            v1,
+                       SimdFloat            v2)
+ {
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata0[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata1[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata2[GMX_SIMD_FLOAT_WIDTH];
++    float    unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
++    float *  rdata0 = simdAlign(unalignedMem);
++    float *  rdata1 = rdata0 + GMX_SIMD_FLOAT_WIDTH;
++    float *  rdata2 = rdata0 + GMX_SIMD_FLOAT_WIDTH*2;
+ 
+     store(rdata0, v0);
+     store(rdata1, v1);
+@@ -263,9 +264,10 @@
+                       SimdFloat            v1,
+                       SimdFloat            v2)
+ {
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata0[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata1[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata2[GMX_SIMD_FLOAT_WIDTH];
++    float    unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
++    float *  rdata0 = simdAlign(unalignedMem);
++    float *  rdata1 = rdata0 + GMX_SIMD_FLOAT_WIDTH;
++    float *  rdata2 = rdata0 + GMX_SIMD_FLOAT_WIDTH*2;
+ 
+     store(rdata0, v0);
+     store(rdata1, v1);
+diff --git a/src/gromacs/simd/impl_x86_sse2/impl_x86_sse2_util_float.h b/src/gromacs/simd/impl_x86_sse2/impl_x86_sse2_util_float.h
+index 67e3047..27a06ec 100644
+--- a/src/gromacs/simd/impl_x86_sse2/impl_x86_sse2_util_float.h
++++ b/src/gromacs/simd/impl_x86_sse2/impl_x86_sse2_util_float.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of the GROMACS molecular simulation package.
+  *
+- * Copyright (c) 2014,2015, by the GROMACS development team, led by
++ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+  * and including many others, as listed in the AUTHORS file in the
+  * top-level source directory and at http://www.gromacs.org.
+@@ -334,8 +334,12 @@
+     // This is likely because (a) the extract function is expensive, and (b)
+     // the alignment scaling can often be done as part of the load instruction
+     // (which is even cheaper than doing it in SIMD registers).
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+-    _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
++    _mm_store_si128(reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
+ }
+ 
+@@ -351,8 +355,12 @@
+     // This is likely because (a) the extract function is expensive, and (b)
+     // the alignment scaling can often be done as part of the load instruction
+     // (which is even cheaper than doing it in SIMD registers).
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+-    _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
++    _mm_store_si128(reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+ }
+ 
+@@ -370,8 +378,12 @@
+     // This is likely because (a) the extract function is expensive, and (b)
+     // the alignment scaling can often be done as part of the load instruction
+     // (which is even cheaper than doing it in SIMD registers).
+-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+-    _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
++    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
++    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
++                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
++
++    _mm_store_si128(reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
+     gatherLoadTranspose<align>(base, ioffset, v0, v1);
+ }
+ 
+diff --git a/src/gromacs/simd/simd.h b/src/gromacs/simd/simd.h
+index 673cfa3..d40ac87 100644
+--- a/src/gromacs/simd/simd.h
++++ b/src/gromacs/simd/simd.h
+@@ -220,29 +220,6 @@
+ namespace gmx
+ {
+ 
+-template<class T, size_t N>
+-struct AlignedArray;
+-
+-#if GMX_SIMD_HAVE_FLOAT
+-/*! \libinternal \brief Identical to std::array with GMX_SIMD_FLOAT_WIDTH alignment.
+- *  Should not be deleted through base pointer (destructor is non-virtual).
+- */
+-template<size_t N>
+-struct alignas(GMX_SIMD_FLOAT_WIDTH*sizeof(float))AlignedArray<float, N> : public std::array<float, N>
+-{
+-};
+-#endif
+-
+-#if GMX_SIMD_HAVE_DOUBLE
+-/*! \libinternal \brief  Identical to std::array with GMX_SIMD_DOUBLE_WIDTH alignment.
+- *  Should not be deleted through base pointer (destructor is non-virtual).
+- */
+-template<size_t N>
+-struct alignas(GMX_SIMD_DOUBLE_WIDTH*sizeof(double))AlignedArray<double, N> : public std::array<double, N>
+-{
+-};
+-#endif
+-
+ #if GMX_SIMD_HAVE_REAL
+ 
+ /*! \name SIMD data types
+@@ -398,6 +375,100 @@
+ 
+ //! \}  end of name-group describing SIMD data types
+ 
++/*! \name SIMD memory alignment operations
++ *  \{
++ */
++
++/*! \brief
++ * Align a pointer for usage with SIMD instructions.
++ *
++ * The C++ standard does not require compilers to support alignas() with
++ * over-alignments larger than the size of native data types.
++ * Thus, there is no portable way of directly defining variables on the
++ * stack with alignment large enough to guarantee it will work with SIMD
++ * aligned load/store instructions.
++ *
++ * Instead, you should declare an array with enough extra space so we can create
++ * an aligned pointer inside the array. For instance, if you use real and
++ * need an array corresponding to the SIMD width, you should make the size of
++ * the array GMX_SIMD_REAL_WIDTH*2, and then use this routine to derive an
++ * aligned pointer to at least GMX_SIMD_REAL_WIDTH elements inside that array.
++ *
++ * \param  p Pointer to memory, allocate with at least enough extra elements
++ *           to correspond to the SIMD data type size.
++ *
++ * \return Aligned pointer (>=p) suitable for loading/storing aligned SIMD data.
++ *         If no SIMD data type is available we do not know the register width,
++ *         and will return the original (unaligned) pointer instead.
++ *
++ * \note   For std::int32_t pointers we always assume the storage is for the
++ *         SimdInt32 type rather than the specific float/double types, since
++ *         we cannot determine it automatically from the argument type.
++ */
++template <class T>
++static gmx_inline T *
++simdAlign(T *p)
++{
++    static_assert(std::is_same<T, float>::value || std::is_same<T, double>::value || std::is_same<T, std::int32_t>::value, "Illegal type for simdAlign");
++
++    if (std::is_same<T, float>::value)
++    {
++#if GMX_SIMD_HAVE_FLOAT
++        return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD_FLOAT_WIDTH-1) &
++                                     ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(float)-1)));
++#else
++        return p;
++#endif
++    }
++    else if (std::is_same<T, double>::value)
++    {
++#if GMX_SIMD_HAVE_DOUBLE
++        return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD_DOUBLE_WIDTH-1) &
++                                     ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(double)-1)));
++#else
++        return p;
++#endif
++    }
++    else
++    {
++        // If we get here, the only possible remaining type allowed by the static_assert is std::int_32
++#if GMX_SIMD_HAVE_REAL
++        return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD_REAL_WIDTH-1) &
++                                     ~(reinterpret_cast<std::size_t>(GMX_SIMD_REAL_WIDTH*sizeof(std::int32_t)-1)));
++#else
++        return p;
++#endif
++    }
++}
++
++/*! \brief
++ * Align a pointer for usage with SIMD4 instructions.
++ *
++ * This is similar to simdAlign, but for the SIMD4 data typ.e
++ *
++ * \param  p Pointer to memory, allocate with at least enough extra elements
++ *           to correspond to the SIMD4 data type size.
++ *
++ * \return Aligned pointer (>=p) suitable for loading/storing aligned SIMD4 data.
++ */
++template <class T>
++static gmx_inline T *
++simd4Align(T *p)
++{
++    static_assert(std::is_same<T, float>::value || std::is_same<T, double>::value, "Illegal type for simd4Align");
++
++#if GMX_SIMD4_HAVE_FLOAT || GMX_SIMD4_HAVE_DOUBLE
++    return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD4_WIDTH-1) &
++                                 ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(T)-1)));
++#else
++    return p;
++#endif
++}
++
++
++//! \}  end of name-group describing SIMD memory alignment operations
++
++
+ /*! \name High-level SIMD proxy objects to disambiguate load/set operations
+  * \{
+  */
+@@ -487,13 +558,6 @@
+     return *m;
+ }
+ 
+-template <typename T, size_t N>
+-static inline T gmx_simdcall
+-load(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
+-{
+-    return simdLoad(m.data(), typename internal::SimdTraits<T>::tag());
+-}
+-
+ /*! \brief Load function that returns SIMD or scalar based on template argument
+  *
+  * \tparam T Type to load (type is always mandatory)
+@@ -512,13 +576,6 @@
+ loadU(const typename std::enable_if<std::is_arithmetic<T>::value, T>::type *m)
+ {
+     return *m;
+-}
+-
+-template <typename T, size_t N>
+-static inline T gmx_simdcall
+-loadU(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
+-{
+-    return simdLoadU(m.data(), typename internal::SimdTraits<T>::tag());
+ }
+ 
+ class SimdSetZeroProxyInternal;
+diff --git a/src/gromacs/simd/simd_math.h b/src/gromacs/simd/simd_math.h
+index ad51957..feda8b8 100644
+--- a/src/gromacs/simd/simd_math.h
++++ b/src/gromacs/simd/simd_math.h
+@@ -742,7 +742,9 @@
+     const SimdFloat         sieve(SimdFloat(-5.965323564e+29f) | SimdFloat(7.05044434e-30f));
+ #else
+     const int               isieve   = 0xFFFFF000;
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  mem[GMX_SIMD_FLOAT_WIDTH];
++
++    float                   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
++    float *                 mem = simdAlign(unalignedMem);
+ 
+     union {
+         float f; int i;
+diff --git a/src/gromacs/simd/tests/bootstrap_loadstore.cpp b/src/gromacs/simd/tests/bootstrap_loadstore.cpp
+index 5bbdb1d..166a7c7 100644
+--- a/src/gromacs/simd/tests/bootstrap_loadstore.cpp
++++ b/src/gromacs/simd/tests/bootstrap_loadstore.cpp
+@@ -92,11 +92,14 @@
+      * to test we are not polluting memory there either. Sum=4*simdWidth.
+      */
+ #if GMX_SIMD4_WIDTH > GMX_SIMD_REAL_WIDTH
+-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      src[simdWidth*4];
+-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      dst[simdWidth*4];
++    T     unalignedMem[GMX_SIMD4_WIDTH*9];
++    T *   src = reinterpret_cast<T *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
++                                      ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(T)-1)));
++    T *   dst = src + GMX_SIMD4_WIDTH*4;
+ #else
+-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  src[simdWidth*4];
+-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  dst[simdWidth*4];
++    T     unalignedMem[GMX_SIMD_REAL_WIDTH*9];
++    T *   src = simdAlign(unalignedMem);
++    T *   dst = src + GMX_SIMD_REAL_WIDTH*4;
+ #endif
+ 
+     // Make sure we have memory to check both before and after the test pointers
+diff --git a/src/gromacs/simd/tests/simd.cpp b/src/gromacs/simd/tests/simd.cpp
+index d07621b..e292946 100644
+--- a/src/gromacs/simd/tests/simd.cpp
++++ b/src/gromacs/simd/tests/simd.cpp
+@@ -124,7 +124,8 @@
+ ::std::vector<real>
+ simdReal2Vector(const SimdReal simd)
+ {
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
++    real   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    real * mem = simdAlign(unalignedMem);
+ 
+     store(mem, simd);
+     std::vector<real>   v(mem, mem+GMX_SIMD_REAL_WIDTH);
+@@ -135,7 +136,8 @@
+ SimdReal
+ vector2SimdReal(const std::vector<real> &v)
+ {
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
++    real   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    real * mem = simdAlign(unalignedMem);
+ 
+     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+     {
+@@ -182,7 +184,8 @@
+ std::vector<int>
+ simdInt2Vector(const SimdInt32 simd)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    std::int32_t * mem = simdAlign(unalignedMem);
+ 
+     store(mem, simd);
+     std::vector<int>    v(mem, mem+GMX_SIMD_REAL_WIDTH);
+@@ -193,7 +196,8 @@
+ SimdInt32
+ vector2SimdInt(const std::vector<int> &v)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
++    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    std::int32_t * mem = simdAlign(unalignedMem);
+ 
+     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+     {
+@@ -230,6 +234,59 @@
+     return compareVectorEq(refExpr, tstExpr, simdInt2Vector(ref), simdInt2Vector(tst));
+ }
+ 
++TEST(SimdTest, Align)
++{
++    // real is always available
++    real          mem1[GMX_SIMD_REAL_WIDTH*2];
++    real        * r1 = simdAlign(mem1);
++
++    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(r1);
++    EXPECT_EQ(0, addr1 % (GMX_SIMD_REAL_WIDTH*sizeof(real)));
++
++    // Try another offset (either mem1 or mem1+1 must be unaligned)
++    r1    = simdAlign(mem1+1);
++    addr1 = reinterpret_cast<std::uint64_t>(r1);
++    EXPECT_EQ(0, addr1 % (GMX_SIMD_REAL_WIDTH*sizeof(real)));
++
++    // int is always available
++    std::int32_t   mem2[GMX_SIMD_REAL_WIDTH*2];
++    std::int32_t * r2 = simdAlign(mem2);
++
++    std::uint64_t  addr2 = reinterpret_cast<std::uint64_t>(r2);
++    EXPECT_EQ(0, addr2 % (GMX_SIMD_REAL_WIDTH*sizeof(std::int32_t)));
++
++    // another offset
++    r2    = simdAlign(mem2+1);
++    addr2 = reinterpret_cast<std::uint64_t>(r2);
++    EXPECT_EQ(0, addr2 % (GMX_SIMD_REAL_WIDTH*sizeof(std::int32_t)));
++
++#if GMX_SIMD_HAVE_FLOAT
++    float         mem3[GMX_SIMD_FLOAT_WIDTH*2];
++    float       * r3 = simdAlign(mem3);
++
++    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(r3);
++    EXPECT_EQ(0, addr3 % (GMX_SIMD_FLOAT_WIDTH*sizeof(float)));
++
++    // another offset
++    r3    = simdAlign(mem3+1);
++    addr3 = reinterpret_cast<std::uint64_t>(r3);
++    EXPECT_EQ(0, addr3 % (GMX_SIMD_FLOAT_WIDTH*sizeof(float)));
++#endif
++
++#if GMX_SIMD_HAVE_DOUBLE
++    double        mem4[GMX_SIMD_DOUBLE_WIDTH*2];
++    double      * r4 = simdAlign(mem4);
++
++    std::uint64_t addr4 = reinterpret_cast<std::uint64_t>(r4);
++    EXPECT_EQ(0, addr4 % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)));
++
++    // another offset
++    r4    = simdAlign(mem4+1);
++    addr4 = reinterpret_cast<std::uint64_t>(r4);
++    EXPECT_EQ(0, addr4 % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)));
++#endif
++}
++
+ #endif  // GMX_SIMD_HAVE_REAL
+ 
+ /*! \} */
+diff --git a/src/gromacs/simd/tests/simd4.cpp b/src/gromacs/simd/tests/simd4.cpp
+index edb66ba..46c7951 100644
+--- a/src/gromacs/simd/tests/simd4.cpp
++++ b/src/gromacs/simd/tests/simd4.cpp
+@@ -86,7 +86,9 @@
+ ::std::vector<real>
+ simd4Real2Vector(const Simd4Real simd4)
+ {
+-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
++    real     unalignedMem[GMX_SIMD4_WIDTH*2];
++    real *   mem = reinterpret_cast<real *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
++                                            ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(real)-1)));
+ 
+     store4(mem, simd4);
+     std::vector<real>   v(mem, mem+GMX_SIMD4_WIDTH);
+@@ -97,7 +99,9 @@
+ Simd4Real
+ vector2Simd4Real(const std::vector<real> &v)
+ {
+-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
++    real     unalignedMem[GMX_SIMD4_WIDTH*2];
++    real *   mem = reinterpret_cast<real *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
++                                            ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(real)-1)));
+ 
+     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+     {
+@@ -141,6 +145,35 @@
+     return compareVectorEq(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
+ }
+ 
++TEST(Simd4Test, Align)
++{
++ #if GMX_SIMD4_HAVE_FLOAT
++    float         mem1[GMX_SIMD4_WIDTH*2];
++    float       * r1 = simd4Align(mem1);
++
++    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(r1);
++    EXPECT_EQ(0, addr1 % (GMX_SIMD4_WIDTH*sizeof(float)));
++
++    // another offset
++    r1    = simd4Align(mem1+1);
++    addr1 = reinterpret_cast<std::uint64_t>(r1);
++    EXPECT_EQ(0, addr1 % (GMX_SIMD4_WIDTH*sizeof(float)));
++#endif
++
++#if GMX_SIMD4_HAVE_DOUBLE
++    double        mem2[GMX_SIMD4_WIDTH*2];
++    double      * r2 = simd4Align(mem2);
++
++    std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(r2);
++    EXPECT_EQ(0, addr2 % (GMX_SIMD4_WIDTH*sizeof(double)));
++
++    // another offset
++    r2    = simd4Align(mem2+1);
++    addr2 = reinterpret_cast<std::uint64_t>(r2);
++    EXPECT_EQ(0, addr2 % (GMX_SIMD4_WIDTH*sizeof(double)));
++#endif
++}
++
+ #endif  // GMX_SIMD4_HAVE_REAL
+ 
+ /*! \} */
+diff --git a/src/gromacs/simd/tests/simd4_floatingpoint.cpp b/src/gromacs/simd/tests/simd4_floatingpoint.cpp
+index b2300ec8..2e1951d 100644
+--- a/src/gromacs/simd/tests/simd4_floatingpoint.cpp
++++ b/src/gromacs/simd/tests/simd4_floatingpoint.cpp
+@@ -312,7 +312,9 @@
+     Simd4Real        v0, v1, v2, v3;
+     int              i;
+     // aligned pointers
+-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH) p0[4*GMX_SIMD4_WIDTH];
++    real             unalignedMem[GMX_SIMD4_WIDTH*5];
++    real *           p0 = reinterpret_cast<real *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
++                                                   ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(real)-1)));
+     real          *  p1 = p0 + GMX_SIMD4_WIDTH;
+     real          *  p2 = p0 + 2*GMX_SIMD4_WIDTH;
+     real          *  p3 = p0 + 3*GMX_SIMD4_WIDTH;
+diff --git a/src/gromacs/simd/tests/simd_floatingpoint.cpp b/src/gromacs/simd/tests/simd_floatingpoint.cpp
+index 14fbe0d..90a042b 100644
+--- a/src/gromacs/simd/tests/simd_floatingpoint.cpp
++++ b/src/gromacs/simd/tests/simd_floatingpoint.cpp
+@@ -453,8 +453,13 @@
+ #if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
+ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
+ {
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
++    float      unalignedMemF[GMX_SIMD_FLOAT_WIDTH*2];
++    float *    f = simdAlign(unalignedMemF);
++    // Create an aligned double array with the same length as the float SIMD
++    // Thus, all constants on the next two lines correctly refer to GMX_SIMD_FLOAT_WIDTH.
++    double     unalignedMemD[GMX_SIMD_FLOAT_WIDTH*2];
++    double *   d = reinterpret_cast<double *>(reinterpret_cast<std::size_t>(unalignedMemD+GMX_SIMD_DOUBLE_WIDTH-1) &
++                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(double)-1)));
+ 
+     int                               i;
+     SimdFloat                         vf;
+@@ -488,8 +493,13 @@
+ 
+ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
+ {
+-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
+-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
++    float      unalignedMemF[GMX_SIMD_FLOAT_WIDTH*2];
++    float *    f = simdAlign(unalignedMemF);
++    // Create an aligned double array with the same length as the float SIMD
++    double     unalignedMemD[GMX_SIMD_FLOAT_WIDTH*2];
++    double *   d = reinterpret_cast<double *>(reinterpret_cast<std::size_t>(unalignedMemD+GMX_SIMD_DOUBLE_WIDTH-1) &
++                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(double)-1)));
++
+     int                               i;
+     SimdFloat                         vf;
+     SimdDouble                        vd0;
+diff --git a/src/gromacs/simd/tests/simd_integer.cpp b/src/gromacs/simd/tests/simd_integer.cpp
+index c675f8b..086f30f 100644
+--- a/src/gromacs/simd/tests/simd_integer.cpp
++++ b/src/gromacs/simd/tests/simd_integer.cpp
+@@ -131,8 +131,10 @@
+ #if GMX_SIMD_HAVE_INT32_EXTRACT
+ TEST_F(SimdIntegerTest, extract)
+ {
+-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  idata[GMX_SIMD_REAL_WIDTH];
+-    SimdInt32 simd;
++    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    std::int32_t * idata = simdAlign(unalignedMem);
++
++    SimdInt32      simd;
+ 
+     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+     {
+diff --git a/src/gromacs/tables/tests/splinetable.cpp b/src/gromacs/tables/tests/splinetable.cpp
+index ee15b45..3c8f05f 100644
+--- a/src/gromacs/tables/tests/splinetable.cpp
++++ b/src/gromacs/tables/tests/splinetable.cpp
+@@ -679,7 +679,8 @@
+     real     refDer  = lj12Derivative(x);
+     SimdReal tstFunc, tstDer;
+     real     funcErr, derErr;
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
++    real     unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    real   * alignedMem = simdAlign(unalignedMem);
+ 
+     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc, &tstDer);
+ 
+@@ -712,7 +713,8 @@
+     SimdReal tstFunc1, tstDer1;
+     real     funcErr0, derErr0;
+     real     funcErr1, derErr1;
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
++    real     unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    real   * alignedMem = simdAlign(unalignedMem);
+ 
+     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc0, &tstDer0, &tstFunc1, &tstDer1);
+ 
+@@ -742,7 +744,8 @@
+     TypeParam                               table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+     SimdReal                                x, func, der;
+ 
+-    AlignedArray<real, GMX_SIMD_REAL_WIDTH> alignedMem;
++    real     unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    real   * alignedMem = simdAlign(unalignedMem);
+ 
+     alignedMem.fill(range.first);
+     // Make position 1 incorrect if width>=2, otherwise position 0
+@@ -765,7 +768,8 @@
+     TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+     SimdReal               x, func, der;
+ 
+-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
++    real                   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
++    real                 * alignedMem = simdAlign(unalignedMem);
+ 
+     // Test all values between 0 and range.second
+     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+diff --git a/src/gromacs/utility/basedefinitions.h b/src/gromacs/utility/basedefinitions.h
+index 1c3e36c..a1638ef 100644
+--- a/src/gromacs/utility/basedefinitions.h
++++ b/src/gromacs/utility/basedefinitions.h
+@@ -226,24 +226,6 @@
+ #endif
+ #endif
+ 
+-/*! \def GMX_ALIGNED(type, alignment)
+- * \brief
+- * Declare variable with data alignment
+- *
+- * \param[in] type       Type of variable
+- * \param[in] alignment  Alignment in multiples of type
+- *
+- * Typical usage:
+- * \code
+-   GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf[...];
+-   \endcode
+- */
+-
+-// We rely on C++11. This will for instance work for MSVC2015 and later.
+-// If you get an error here, find out what attribute to use to get your compiler to align
+-// data properly and add it as a case.
+-#define GMX_ALIGNED(type, alignment) alignas(alignment*sizeof(type)) type
+-
+ /*! \brief
+  * Macro to explicitly ignore an unused value.
+  *
+diff --git a/src/gromacs/utility/tests/CMakeLists.txt b/src/gromacs/utility/tests/CMakeLists.txt
+index 57cf2a1..74ed8f4 100644
+--- a/src/gromacs/utility/tests/CMakeLists.txt
++++ b/src/gromacs/utility/tests/CMakeLists.txt
+@@ -35,7 +35,6 @@
+ gmx_add_unit_test(UtilityUnitTests utility-test
+                   alignedallocator.cpp
+                   arrayref.cpp
+-                  basedefinitions.cpp
+                   bitmask32.cpp bitmask64.cpp bitmask128.cpp
+                   keyvaluetreeserializer.cpp
+                   keyvaluetreetransform.cpp
+diff --git a/src/gromacs/utility/tests/basedefinitions.cpp b/src/gromacs/utility/tests/basedefinitions.cpp
+deleted file mode 100644
+index a0223e1..0000000
+--- a/src/gromacs/utility/tests/basedefinitions.cpp
++++ /dev/null
+@@ -1,82 +0,0 @@
+-/*
+- * This file is part of the GROMACS molecular simulation package.
+- *
+- * Copyright (c) 2015, by the GROMACS development team, led by
+- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+- * and including many others, as listed in the AUTHORS file in the
+- * top-level source directory and at http://www.gromacs.org.
+- *
+- * GROMACS is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU Lesser General Public License
+- * as published by the Free Software Foundation; either version 2.1
+- * of the License, or (at your option) any later version.
+- *
+- * GROMACS is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * Lesser General Public License for more details.
+- *
+- * You should have received a copy of the GNU Lesser General Public
+- * License along with GROMACS; if not, see
+- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+- *
+- * If you want to redistribute modifications to GROMACS, please
+- * consider that scientific software is very special. Version
+- * control is crucial - bugs must be traceable. We will be happy to
+- * consider code for inclusion in the official distribution, but
+- * derived work must not be called official GROMACS. Details are found
+- * in the README & COPYING files - if they are missing, get the
+- * official version at http://www.gromacs.org.
+- *
+- * To help us fund GROMACS development, we humbly ask that you cite
+- * the research papers on the package. Check out http://www.gromacs.org.
+- */
+-/*! \internal \file
+- * \brief Tests for base definitions (only alignment attributes for now)
+- *
+- * \author Erik Lindahl <erik.lindahl@gmail.com>
+- * \ingroup module_utility
+- */
+-
+-#include "gmxpre.h"
+-
+-#include "gromacs/utility/basedefinitions.h"
+-
+-#include <cstdint>
+-
+-#include <gtest/gtest.h>
+-
+-#include "gromacs/utility/real.h"
+-
+-namespace gmx
+-{
+-
+-TEST(BasedefinitionsTest, GmxAlignedDeclaresAlignedVariable)
+-{
+-    GMX_ALIGNED(real, 2)  r1;
+-    GMX_ALIGNED(real, 4)  r2;
+-    GMX_ALIGNED(real, 8)  r3;
+-
+-    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(&r1);
+-    std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
+-    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(&r3);
+-
+-    EXPECT_EQ(0, addr1 % 2);
+-    EXPECT_EQ(0, addr2 % 4);
+-    EXPECT_EQ(0, addr3 % 8);
+-
+-    GMX_ALIGNED(int, 2)   i1;
+-    GMX_ALIGNED(int, 4)   i2;
+-    GMX_ALIGNED(int, 8)   i3;
+-
+-    addr1 = reinterpret_cast<std::uint64_t>(&i1);
+-    addr2 = reinterpret_cast<std::uint64_t>(&i2);
+-    addr3 = reinterpret_cast<std::uint64_t>(&i3);
+-
+-    EXPECT_EQ(0, addr1 % 2);
+-    EXPECT_EQ(0, addr2 % 4);
+-    EXPECT_EQ(0, addr3 % 8);
+-}
+-
+-}

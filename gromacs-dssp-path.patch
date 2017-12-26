@@ -1,6 +1,7 @@
-diff -up gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/gmxana/gmx_do_dssp.cpp.dssp gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/gmxana/gmx_do_dssp.cpp
---- gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/gmxana/gmx_do_dssp.cpp.dssp	2016-02-23 22:23:54.000000000 +0100
-+++ gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/gmxana/gmx_do_dssp.cpp	2016-02-24 11:06:12.982692034 +0100
+diff --git a/src/gromacs/gmxana/gmx_do_dssp.cpp b/src/gromacs/gmxana/gmx_do_dssp.cpp
+index a8aab1bc2..184592b7e 100644
+--- a/src/gromacs/gmxana/gmx_do_dssp.cpp
++++ b/src/gromacs/gmxana/gmx_do_dssp.cpp
 @@ -445,7 +445,7 @@ int gmx_do_dssp(int argc, char *argv[])
          "calling the dssp program. If you do not have the dssp program,",
          "get it from http://swift.cmbi.ru.nl/gv/dssp. [THISMODULE] assumes ",
@@ -12,7 +13,7 @@ diff -up gromacs-a7093a73959458a1f4aa4e384104a5515a4f2863/src/gromacs/gmxana/gmx
          "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
 @@ -590,7 +590,7 @@ int gmx_do_dssp(int argc, char *argv[])
  
-     if ((dptr = getenv("DSSP")) == NULL)
+     if ((dptr = getenv("DSSP")) == nullptr)
      {
 -        dptr = "/usr/local/bin/dssp";
 +        dptr = "/usr/bin/mkdssp";

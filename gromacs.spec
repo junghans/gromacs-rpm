@@ -1,12 +1,8 @@
 %global git 0
 %global commit d44d7d6bebdb7fa52090b744854d49f34099e044
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-
-%ifnarch s390 s390x
-%global with_openmpi 1
-%else
-%global with_openmpi 0
-%endif
+%global _rcname beta3
+%global _rc -%%_rcname
 
 %global with_opencl 1
 # compilation of OpenCL support is failing only on ppc64le
@@ -39,8 +35,8 @@
 %endif
 
 Name:		gromacs
-Version:	2016.4
-Release:	1%{?dist}
+Version:	2018
+Release:	0.1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -56,13 +52,18 @@ BuildRequires:	%{_bindir}/makeindex
 BuildRequires:	%{_bindir}/pdflatex
 BuildRequires:	python2-sphinx
 %else
-Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
-Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}.pdf
+Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}%{?_rc}.tar.gz
+Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}%{?_rc}.pdf
+Source2:	http://gerrit.gromacs.org/download/regressiontests-%{version}%{?_rc}.tar.gz
 %endif
 Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
+# https://redmine.gromacs.org/issues/2365
+Patch1:		b7713bf.diff
+# enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
+Patch2:		gromacs-issue-2366.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
 BuildRequires:	cmake
@@ -81,10 +82,6 @@ Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
 BuildRequires:	tinyxml2-devel >= 2.1.0
 BuildRequires:	tng-devel
-%if 0%{?fedora}
-# To get rid of executable stacks
-BuildRequires:	/usr/bin/execstack
-%endif
 BuildRequires:	bash-completion
 %define compdir %(pkg-config --variable=completionsdir bash-completion)
 %if "%{compdir}" == ""
@@ -197,7 +194,6 @@ and solid state physics.
 This package contains libraries needed for operation of GROMACS.
 
 
-%if %{with_openmpi}
 %package openmpi
 Summary:	GROMACS Open MPI binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
@@ -217,7 +213,6 @@ and solid state physics.
 mdrun has been compiled with thread parallellization (for running on
 a single node) and with Open MPI (for running on multiple nodes).
 This package single and double precision binaries and libraries.
-%endif
 
 
 %package mpich
@@ -246,7 +241,9 @@ This package single and double precision binaries and libraries.
 %setup -q -n gromacs-%{commit}
 %patch3 -p1 -b .sphinx-no-man
 %else
-%setup -q
+%setup -q -a 2 -n gromacs-%{version}%{?_rc}
+%patch1 -p1
+%patch2 -p1
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
 %patch0 -p1 -b .dssp
@@ -256,11 +253,6 @@ rm -r src/external/{fftpack,tinyxml2,tng_io,lmfit}
 mkdir -p {serial,mpich,openmpi}{,_d}
 
 %build
-# Assembly kernels haven't got .note.GNU-stack sections
-# because of incompatibilies with Microsoft Assembler.
-# Add noexecstack to compiler flags
-
-export CFLAGS="%optflags -Wa,--noexecstack -fPIC"
 export LDFLAGS="-L%{_libdir}/atlas"
 
 # Default options, used for all compilations
@@ -284,7 +276,6 @@ export LDFLAGS="-L%{_libdir}/atlas"
 %global double -DGMX_DOUBLE:BOOL=ON
 %global mpi -DGMX_BUILD_MDRUN_ONLY:BOOL=ON -DGMX_MPI:BOOL=ON -DGMX_THREAD_MPI:BOOL=OFF -DGMX_DEFAULT_SUFFIX:BOOL=OFF -DBUILD_SHARED_LIBS:BOOL=OFF
 
-%if %{with_openmpi}
 %{_openmpi_load}
 for p in '' _d ; do
 cd openmpi${p}
@@ -298,7 +289,6 @@ make VERBOSE=1 %{?_smp_mflags}
 cd ..
 done
 %{_openmpi_unload}
-%endif
 
 %{_mpich_load}
 for p in '' _d ; do
@@ -316,8 +306,10 @@ done
 
 for p in '' _d ; do
 cd serial${p}
+cp -al ../regressiontests* tests/
 %cmake \
  %{defopts} \
+ -DREGRESSIONTEST_PATH=${PWD}/tests \
  -DGMX_X11=ON \
  $(test -n "$p" && echo %{double} || echo %{?single}) \
  ..
@@ -338,14 +330,12 @@ cd ..
 %endif
 
 %install
-%if %{with_openmpi}
 %{_openmpi_load}
 # Make install-mdrun target is broken, do install manually
 for p in '' _d ; do
 install -Dpm755 openmpi${p}/bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/mdrun${MPI_SUFFIX}${p}
 done
 %{_openmpi_unload}
-%endif
 
 %{_mpich_load}
 # Make install-mdrun target is broken, do install manually
@@ -382,15 +372,6 @@ rm ./%{_bindir}/gmx-completion-${bin}.bash
 done
 rm ./%{_bindir}/gmx-completion.bash
 
-# Remove .la files
-find ./ -name *.la -delete
-
-%if 0%{?fedora}
-# Get rid of executable stacks
-find ./ -name *.so.* -exec execstack -c {} \;
-popd
-%endif
-
 
 # Post install for libs. MPI packages don't need this.
 %post libs -p /sbin/ldconfig
@@ -399,7 +380,6 @@ popd
 
 %if 1
 %check
-%if %{with_openmpi}
 %{_openmpi_load}
 for p in '' _d ; do
   cd openmpi${p}
@@ -407,7 +387,6 @@ for p in '' _d ; do
   cd ..
 done
 %{_openmpi_unload}
-%endif
 %{_mpich_load}
 for p in '' _d ; do
   cd mpich${p}
@@ -460,15 +439,22 @@ done
 %{_datadir}/%{name}/template
 %{_datadir}/cmake/gromacs*
 
-%if %{with_openmpi}
 %files openmpi
 %{_libdir}/openmpi/bin/mdrun_openmpi*
-%endif
 
 %files mpich
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Mon Dec 25 2017 Christoph Junghans <junghans@votca.org> - 2018-0.1beta3
+- Update to 2018-beta3 for testing
+- Disable HardwareTopologyTest.NumaCacheSelfconsistency test on aarch64
+- Run regressiontests for serial build (don't work for mpi build)
+- Clean up
+  - Drop execstack as everything is intristic now
+  - No la .files anymore, so drop find -delete
+  - OpenMPI was ported to s390, so enable it everywhere
+
 * Fri Sep 15 2017 Christoph Junghans <junghans@votca.org> - 2016.4-1
 - Update to 2016.4
 
