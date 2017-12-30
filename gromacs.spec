@@ -1,7 +1,7 @@
 %global git 0
 %global commit d44d7d6bebdb7fa52090b744854d49f34099e044
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global _rcname beta3
+%global _rcname rc1
 %global _rc -%%_rcname
 
 %global with_opencl 1
@@ -36,7 +36,7 @@
 
 Name:		gromacs
 Version:	2018
-Release:	0.1%{?_rcname}%{?dist}
+Release:	0.2%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -61,7 +61,7 @@ Source6:	gromacs-README.fedora
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
 # https://redmine.gromacs.org/issues/2365
-Patch1:		b7713bf.diff
+Patch1:                43a0002.diff
 # enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
 Patch2:		gromacs-issue-2366.patch
 # fix building documentation
@@ -446,6 +446,10 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Sat Dec 30 2017 Christoph Junghans <junghans@votca.org> - 2018-0.2rc1
+- Update to 2018-rc1 for testing
+- Update b7713bf.diff to 43a0002.diff
+
 * Mon Dec 25 2017 Christoph Junghans <junghans@votca.org> - 2018-0.1beta3
 - Update to 2018-beta3 for testing
 - Disable HardwareTopologyTest.NumaCacheSelfconsistency test on aarch64
