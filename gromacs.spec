@@ -1,8 +1,8 @@
 %global git 0
 %global commit d44d7d6bebdb7fa52090b744854d49f34099e044
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global _rcname rc1
-%global _rc -%%_rcname
+#global _rcname rc1
+#global _rc -%%_rcname
 
 %global with_opencl 1
 # compilation of OpenCL support is failing only on ppc64le
@@ -36,7 +36,7 @@
 
 Name:		gromacs
 Version:	2018
-Release:	0.2%{?_rcname}%{?dist}
+Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -60,8 +60,6 @@ Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# https://redmine.gromacs.org/issues/2365
-Patch1:                43a0002.diff
 # enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
 Patch2:		gromacs-issue-2366.patch
 # fix building documentation
@@ -242,7 +240,6 @@ This package single and double precision binaries and libraries.
 %patch3 -p1 -b .sphinx-no-man
 %else
 %setup -q -a 2 -n gromacs-%{version}%{?_rc}
-%patch1 -p1
 %patch2 -p1
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
@@ -446,6 +443,10 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Jan 19 2018 Christoph Junghans <junghans@votca.org> - 2018-1
+- Update to 2018
+- Drop 43a0002.diff, merged upstream
+
 * Sat Dec 30 2017 Christoph Junghans <junghans@votca.org> - 2018-0.2rc1
 - Update to 2018-rc1 for testing
 - Update b7713bf.diff to 43a0002.diff
