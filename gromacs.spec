@@ -64,6 +64,7 @@ Patch0:		gromacs-dssp-path.patch
 Patch2:		gromacs-issue-2366.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
+BuildRequires:  gcc-c++
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	fftw-devel
