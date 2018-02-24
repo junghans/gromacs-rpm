@@ -36,7 +36,7 @@
 
 Name:		gromacs
 Version:	2018
-Release:	1%{?_rcname}%{?dist}.1
+Release:	1%{?_rcname}%{?dist}.2
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -64,7 +64,7 @@ Patch0:		gromacs-dssp-path.patch
 Patch2:		gromacs-issue-2366.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
-BuildRequires:  gcc-c++
+BuildRequires:	gcc-c++
 BuildRequires:	cmake
 BuildRequires:	atlas-devel >= 3.10.1
 BuildRequires:	fftw-devel
@@ -79,7 +79,6 @@ BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
 Recommends:	gromacs-opencl = %{version}-%{release}
 %endif
-BuildRequires:	tinyxml2-devel >= 2.1.0
 BuildRequires:	tng-devel
 BuildRequires:	bash-completion
 %define compdir %(pkg-config --variable=completionsdir bash-completion)
@@ -246,7 +245,9 @@ install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
 %patch0 -p1 -b .dssp
 # Delete bundled stuff so that it doesn't get used accidentally
-rm -r src/external/{fftpack,tinyxml2,tng_io,lmfit}
+# Don't remove tinyxml2 as gromacs needs an old version to build
+# test, see: https://redmine.gromacs.org/issues/2389
+rm -r src/external/{fftpack,tng_io,lmfit}
 
 mkdir -p {serial,mpich,openmpi}{,_d}
 
@@ -262,7 +263,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DGMX_BUILD_UNITTESTS:BOOL=ON \\\
  -DGMX_EXTERNAL_LMFIT:BOOL=ON \\\
  -DGMX_EXTERNAL_TNG:BOOL=ON \\\
- -DGMX_EXTERNAL_TINYXML2:BOOL=ON \\\
+ -DGMX_EXTERNAL_TINYXML2:BOOL=OFF \\\
  -DGMX_LAPACK_USER=satlas \\\
  -DGMX_USE_RDTSCP=OFF \\\
  -DGMX_SIMD=%{simd} \\\
@@ -444,6 +445,10 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Sat Feb 24 2018 Christoph Junghans <junghans@votca.org> - 2018-1.2
+- add gcc-c++ as BuildRequires
+- use bundled tinyml2 to build tests, system one is too new
+
 * Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 2018-1.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
