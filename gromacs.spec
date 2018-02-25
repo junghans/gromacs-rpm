@@ -23,9 +23,10 @@
 %ifarch ppc64p7
 %global simd IBM_VMX
 %endif
-%ifarch ppc64le
-%global simd IBM_VSX
-%endif
+# https://redmine.gromacs.org/issues/2421
+#ifarch ppc64le
+#global simd IBM_VSX
+#endif
 %ifarch armv7hnl
 %global simd ARM_NEON
 %endif
