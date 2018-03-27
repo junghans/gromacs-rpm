@@ -447,7 +447,7 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
-* Mon Mar 19 2018 Christoph Junghans <junghans@votca.org> - 2018.1-1
+* Tue Mar 27 2018 Christoph Junghans <junghans@votca.org> - 2018.1-1
 - Bump to version 2018.1 (bug #1559202)
 
 * Sat Feb 24 2018 Christoph Junghans <junghans@votca.org> - 2018-1.2
