@@ -36,8 +36,8 @@
 %endif
 
 Name:		gromacs
-Version:	2018
-Release:	1%{?_rcname}%{?dist}.2
+Version:	2018.1
+Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -62,6 +62,7 @@ Source6:	gromacs-README.fedora
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
 # enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
+# bug#1558206
 Patch2:		gromacs-issue-2366.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
@@ -446,6 +447,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Mon Mar 19 2018 Christoph Junghans <junghans@votca.org> - 2018.1-1
+- Bump to version 2018.1 (bug #1559202)
+
 * Sat Feb 24 2018 Christoph Junghans <junghans@votca.org> - 2018-1.2
 - add gcc-c++ as BuildRequires
 - use bundled tinyml2 to build tests, system one is too new
