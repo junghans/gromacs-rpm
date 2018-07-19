@@ -36,8 +36,8 @@
 %endif
 
 Name:		gromacs
-Version:	2018.1
-Release:	1%{?_rcname}%{?dist}.1
+Version:	2018.2
+Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -55,7 +55,8 @@ BuildRequires:	python2-sphinx
 %else
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}%{?_rc}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}%{?_rc}.pdf
-Source2:	http://gerrit.gromacs.org/download/regressiontests-%{version}%{?_rc}.tar.gz
+# Too britle sind 2018.2
+# Source2:	http://gerrit.gromacs.org/download/regressiontests-{version}{?_rc}.tar.gz
 %endif
 Source6:	gromacs-README.fedora
 # fix path to packaged dssp
@@ -66,9 +67,17 @@ Patch0:		gromacs-dssp-path.patch
 Patch2:		gromacs-issue-2366.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
+# add support for lmfit-7.0
+# https://redmine.gromacs.org/issues/2533
+Patch4:		facb927.diff
 BuildRequires:	gcc-c++
-BuildRequires:	cmake
-BuildRequires:	atlas-devel >= 3.10.1
+%if 0%{?rhel}
+BuildRequires:  cmake3 >= 3.4.3
+%else
+BuildRequires:  cmake >= 3.4.3
+%global cmake3 %{cmake}
+%endif
+BuildRequires:	openblas-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
 BuildRequires:	hwloc
@@ -165,7 +174,6 @@ This package the manual in PDF format.
 %package devel
 Summary:	GROMACS header files and development libraries
 Requires:	gromacs-libs = %{version}-%{release}
-Requires:	cmake
 Obsoletes:	gromacs-mpich-devel < 2016-0.1.20160318gitbec9c87
 Obsoletes:	gromacs-openmpi-devel < 2016-0.1.20160318gitbec9c87
 
@@ -241,8 +249,9 @@ This package single and double precision binaries and libraries.
 %setup -q -n gromacs-%{commit}
 %patch3 -p1 -b .sphinx-no-man
 %else
-%setup -q -a 2 -n gromacs-%{version}%{?_rc}
+%setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
 %patch2 -p1
+%patch4 -p1
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
 %patch0 -p1 -b .dssp
@@ -261,12 +270,13 @@ export LDFLAGS="-L%{_libdir}/atlas"
  -DBUILD_TESTING:BOOL=ON \\\
  -DCMAKE_SKIP_RPATH:BOOL=ON \\\
  -DCMAKE_SKIP_BUILD_RPATH:BOOL=ON \\\
- -DGMX_BLAS_USER=satlas \\\
+ -DGMX_BLAS_USER=openblas \\\
  -DGMX_BUILD_UNITTESTS:BOOL=ON \\\
  -DGMX_EXTERNAL_LMFIT:BOOL=ON \\\
+ -DGMX_USE_LMFIT=external \\\
  -DGMX_EXTERNAL_TNG:BOOL=ON \\\
  -DGMX_EXTERNAL_TINYXML2:BOOL=OFF \\\
- -DGMX_LAPACK_USER=satlas \\\
+ -DGMX_LAPACK_USER=openblas \\\
  -DGMX_USE_RDTSCP=OFF \\\
  -DGMX_SIMD=%{simd} \\\
 
@@ -280,7 +290,7 @@ export LDFLAGS="-L%{_libdir}/atlas"
 %{_openmpi_load}
 for p in '' _d ; do
 cd openmpi${p}
-%cmake \
+%{cmake3} \
  %{defopts} \
  %{mpi} \
  -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} \
@@ -294,7 +304,7 @@ done
 %{_mpich_load}
 for p in '' _d ; do
 cd mpich${p}
-%cmake \
+%{cmake3} \
  %{defopts} \
  %{mpi} \
  -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} \
@@ -307,10 +317,9 @@ done
 
 for p in '' _d ; do
 cd serial${p}
-cp -al ../regressiontests* tests/
-%cmake \
+# cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
+%{cmake3} \
  %{defopts} \
- -DREGRESSIONTEST_PATH=${PWD}/tests \
  -DGMX_X11=ON \
  $(test -n "$p" && echo %{double} || echo %{?single}) \
  ..
@@ -320,7 +329,7 @@ done
 
 %if %{git}
 cd serial
-%cmake \
+%{cmake3} \
  %{defopts} \
  -DGMX_X11=ON \
  %{?single} \
@@ -373,13 +382,8 @@ rm ./%{_bindir}/gmx-completion-${bin}.bash
 done
 rm ./%{_bindir}/gmx-completion.bash
 
+%ldconfig_scriptlets libs
 
-# Post install for libs. MPI packages don't need this.
-%post libs -p /sbin/ldconfig
-
-%postun libs -p /sbin/ldconfig
-
-%if 1
 %check
 %{_openmpi_load}
 for p in '' _d ; do
@@ -405,7 +409,6 @@ for p in '' ; do
   LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check
   cd ..
 done
-%endif
 
 
 %files
@@ -447,6 +450,12 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Wed Jul 18 2018 Christoph Junghans <junghans@votca.org> - 2018.2-1
+- Version bump to 2018.2 (bug #1591052)
+- Add support for lmfit-7 (patch will be part of v2019)
+- Switch to OpenBlas (bug #1602822)
+- Disable brittle regressiontests
+
 * Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 2018.1-1.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
