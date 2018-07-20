@@ -4,6 +4,13 @@
 #global _rcname rc1
 #global _rc -%%_rcname
 
+# see https://bugzilla.redhat.com/show_bug.cgi?id=1598961
+%if 0%{?fedora} >= 29
+%ifarch x86_64 i686
+%undefine _annotated_build
+%endif
+%endif
+
 %global with_opencl 1
 # compilation of OpenCL support is failing only on ppc64le
 %ifarch ppc64le
