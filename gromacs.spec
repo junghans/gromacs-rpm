@@ -4,15 +4,8 @@
 #global _rcname rc1
 #global _rc -%%_rcname
 
-# see https://bugzilla.redhat.com/show_bug.cgi?id=1598961
-%if 0%{?fedora} >= 29
-%ifarch x86_64 i686
-%undefine _annotated_build
-%endif
-%endif
-
 %global with_opencl 1
-# compilation of OpenCL support is failing only on ppc64le
+# compilation of OpenCL support is failing only on ppc64le (retested 5 Nov 2018)
 %ifarch ppc64le
 %global with_opencl 0
 %endif
@@ -25,15 +18,19 @@
 %ifarch x86_64
 %global simd SSE2
 %endif
+%if 0%{?fedora} >= 29
+%ifarch i686
+%global simd SSE2
+%endif
+%endif
 # binutils on RHEL is too old for these ppe64 and arm simd kernels
 %if 0%{?fedora}
 %ifarch ppc64p7
 %global simd IBM_VMX
 %endif
-# https://redmine.gromacs.org/issues/2421
-#ifarch ppc64le
-#global simd IBM_VSX
-#endif
+%ifarch ppc64le
+%global simd IBM_VSX
+%endif
 %ifarch armv7hnl
 %global simd ARM_NEON
 %endif
@@ -43,7 +40,7 @@
 %endif
 
 Name:		gromacs
-Version:	2018.2
+Version:	2018.3
 Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
@@ -63,7 +60,7 @@ BuildRequires:	python2-sphinx
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}%{?_rc}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}%{?_rc}.pdf
 # Too britle sind 2018.2
-# Source2:	http://gerrit.gromacs.org/download/regressiontests-{version}{?_rc}.tar.gz
+Source2:	http://gerrit.gromacs.org/download/regressiontests-%{version}%{?_rc}.tar.gz
 %endif
 Source6:	gromacs-README.fedora
 # fix path to packaged dssp
@@ -78,12 +75,7 @@ Patch3:		gromacs-sphinx-no-man.patch
 # https://redmine.gromacs.org/issues/2533
 Patch4:		facb927.diff
 BuildRequires:	gcc-c++
-%if 0%{?rhel}
 BuildRequires:  cmake3 >= 3.4.3
-%else
-BuildRequires:  cmake >= 3.4.3
-%global cmake3 %{cmake}
-%endif
 BuildRequires:	openblas-devel
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
@@ -267,8 +259,6 @@ install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # test, see: https://redmine.gromacs.org/issues/2389
 rm -r src/external/{fftpack,tng_io,lmfit}
 
-mkdir -p {serial,mpich,openmpi}{,_d}
-
 %build
 export LDFLAGS="-L%{_libdir}/atlas"
 
@@ -294,77 +284,31 @@ export LDFLAGS="-L%{_libdir}/atlas"
 %global double -DGMX_DOUBLE:BOOL=ON
 %global mpi -DGMX_BUILD_MDRUN_ONLY:BOOL=ON -DGMX_MPI:BOOL=ON -DGMX_THREAD_MPI:BOOL=OFF -DGMX_DEFAULT_SUFFIX:BOOL=OFF -DBUILD_SHARED_LIBS:BOOL=OFF
 
-%{_openmpi_load}
+. /etc/profile.d/modules.sh
 for p in '' _d ; do
-cd openmpi${p}
-%{cmake3} \
- %{defopts} \
- %{mpi} \
- -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} \
- $(test -n "$p" && echo %{double} || echo %{?single}) \
- ..
-make VERBOSE=1 %{?_smp_mflags}
-cd ..
+  for mpi in '' mpich openmpi ; do
+    test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
+    mkdir -p ${mpi:-serial}${p}
+    pushd ${mpi:-serial}${p}
+    test -z "${mpi}" && cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
+    %{cmake3} %{defopts} \
+      $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
+      $(test -n "$p" && echo %{double} || echo %{?single}) \
+      ..
+    %make_build
+    popd
+    test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
+  done
 done
-%{_openmpi_unload}
-
-%{_mpich_load}
-for p in '' _d ; do
-cd mpich${p}
-%{cmake3} \
- %{defopts} \
- %{mpi} \
- -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} \
- $(test -n "$p" && echo %{double} || echo %{?single}) \
- ..
-make VERBOSE=1 %{?_smp_mflags}
-cd ..
-done
-%{_mpich_unload}
-
-for p in '' _d ; do
-cd serial${p}
-# cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
-%{cmake3} \
- %{defopts} \
- -DGMX_X11=ON \
- $(test -n "$p" && echo %{double} || echo %{?single}) \
- ..
-make VERBOSE=1 %{?_smp_mflags}
-cd ..
-done
-
-%if %{git}
-cd serial
-%{cmake3} \
- %{defopts} \
- -DGMX_X11=ON \
- %{?single} \
- -DGMX_BUILD_MANUAL:BOOL=ON -DGMX_BUILD_HELP:BOOL=ON \
- ..
-LD_LIBRARY_PATH=$PWD/lib make VERBOSE=1 completion install-guide man manual
-cd ..
-%endif
 
 %install
-%{_openmpi_load}
-# Make install-mdrun target is broken, do install manually
+. /etc/profile.d/modules.sh
 for p in '' _d ; do
-install -Dpm755 openmpi${p}/bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/mdrun${MPI_SUFFIX}${p}
-done
-%{_openmpi_unload}
-
-%{_mpich_load}
-# Make install-mdrun target is broken, do install manually
-for p in '' _d ; do
-install -Dpm755 mpich${p}/bin/mdrun${MPI_SUFFIX}${p} %{buildroot}$MPI_BIN/mdrun${MPI_SUFFIX}${p}
-done
-%{_mpich_unload}
-
-for p in '' _d ; do
-cd serial${p}
-make DESTDIR=%{buildroot} INSTALL="install -p" install
-cd ..
+  for mpi in '' mpich openmpi ; do
+    test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
+    %make_install -C ${mpi:-serial}${p}
+    test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
+  done
 done
 
 mkdir -p %{buildroot}%{_docdir}/gromacs
@@ -378,45 +322,33 @@ pushd %{buildroot}
 rm ./%{_bindir}/GMXRC*
 
 for bin in demux.pl xplor2gmx.pl; do
-mv ./%{_bindir}/$bin ./%{_bindir}/g_${bin}
+  mv ./%{_bindir}/$bin ./%{_bindir}/g_${bin}
 done
 
 # Move completion files around
 mkdir -p ./%{compdir}
 for bin in gmx{,_d}; do
-cat ./%{_bindir}/gmx-completion{,-$bin}.bash > ./%{compdir}/${bin}
-rm ./%{_bindir}/gmx-completion-${bin}.bash
+  cat ./%{_bindir}/gmx-completion{,-$bin}.bash > ./%{compdir}/${bin}
+  rm ./%{_bindir}/gmx-completion-${bin}.bash
 done
-rm ./%{_bindir}/gmx-completion.bash
+rm ./%{_bindir}/gmx-completion.bash ./%{_libdir}/*mpi*/bin/gmx-completion-*mpi*.bash
 
 %ldconfig_scriptlets libs
 
 %check
-%{_openmpi_load}
+. /etc/profile.d/modules.sh
 for p in '' _d ; do
-  cd openmpi${p}
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
-  cd ..
-done
-%{_openmpi_unload}
-%{_mpich_load}
-for p in '' _d ; do
-  cd mpich${p}
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} make VERBOSE=1 %{?_smp_mflags} check
-  cd ..
-done
-%{_mpich_unload}
-# s390 has too little memory to run the testsuite with double precision
-%ifnarch s390
-for p in '' _d ; do
-%else
-for p in '' ; do
+  for mpi in '' mpich openmpi ; do
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1512229 (tested 6. Nov 2018)
+%ifarch i686 armv7hl
+    test "${mpi}"  = "openmpi" && continue
 %endif
-  cd serial${p}
-  LD_LIBRARY_PATH=%{buildroot}%{_libdir} make VERBOSE=1 %{?_smp_mflags} check
-  cd ..
+    test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
+    test -n "${mpi}" && xLD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} || xLD_LIBRARY_PATH=%{buildroot}%{_libdir}
+    LD_LIBRARY_PATH="${xLD_LIBRARY_PATH}" make -C ${mpi:-serial}${p} VERBOSE=1 %{?_smp_mflags} check
+    test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
+  done
 done
-
 
 %files
 %{_bindir}/gmx*
@@ -457,6 +389,10 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Nov 2 2018 Christoph Junghans <junghans@votca.org> - 2018.3-1
+- Version bump to 2018.3
+- Major spec files clean up
+
 * Wed Jul 18 2018 Christoph Junghans <junghans@votca.org> - 2018.2-1
 - Version bump to 2018.2 (bug #1591052)
 - Add support for lmfit-7 (patch will be part of v2019)
