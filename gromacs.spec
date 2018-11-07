@@ -292,11 +292,18 @@ for p in '' _d ; do
     mkdir -p ${mpi:-serial}${p}
     pushd ${mpi:-serial}${p}
 # regression test broken on ppc64le, https://redmine.gromacs.org/issues/2734, tested 7.Nov.2018
+# and on i686 and ppc64 with gcc-8.0 (so f28, f27), https://redmine.gromacs.org/issues/2584, tested 7.Nov.2018
     test -z "${mpi}" && cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
     %{cmake3} %{defopts} \
       $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN}) \
+%if 0%{?fedora} >= 29
 %ifnarch ppc64le
       $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
+%endif
+%else
+%ifnarch ppc64le ppc64 i686
+      $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
+%endif
 %endif
       $(test -n "$p" && echo %{double} || echo %{?single}) \
       ..
