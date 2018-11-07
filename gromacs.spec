@@ -28,9 +28,10 @@
 %ifarch ppc64p7
 %global simd IBM_VMX
 %endif
-%ifarch ppc64le
-%global simd IBM_VSX
-%endif
+# https://redmine.gromacs.org/issues/2421 , tested 7.Nov.2018
+#ifarch ppc64le
+#global simd IBM_VSX
+#endif
 %ifarch armv7hnl
 %global simd ARM_NEON
 %endif
@@ -290,9 +291,13 @@ for p in '' _d ; do
     test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
     mkdir -p ${mpi:-serial}${p}
     pushd ${mpi:-serial}${p}
+# regression test broken on ppc64le, https://redmine.gromacs.org/issues/2734, tested 7.Nov.2018
     test -z "${mpi}" && cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
     %{cmake3} %{defopts} \
-      $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
+      $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN}) \
+%ifnarch ppc64le
+      $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
+%endif
       $(test -n "$p" && echo %{double} || echo %{?single}) \
       ..
     %make_build
