@@ -1,6 +1,3 @@
-%global git 0
-%global commit d44d7d6bebdb7fa52090b744854d49f34099e044
-%global shortcommit %(c=%{commit}; echo ${c:0:7})
 #global _rcname rc1
 #global _rc -%%_rcname
 
@@ -44,31 +41,17 @@ Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
 
-%if %{git}
-Source0:	https://github.com/gromacs/gromacs/archive/%{commit}/gromacs-%{commit}.tar.gz
-# required for building the manual
-BuildRequires:	%{_bindir}/bibtex
-BuildRequires:	%{_bindir}/convert
-BuildRequires:	%{_bindir}/dvips
-BuildRequires:	%{_bindir}/latex2html
-BuildRequires:	%{_bindir}/makeindex
-BuildRequires:	%{_bindir}/pdflatex
-BuildRequires:	python2-sphinx
-%else
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}%{?_rc}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-%{version}%{?_rc}.pdf
 # Too britle sind 2018.2
 Source2:	http://gerrit.gromacs.org/download/regressiontests-%{version}%{?_rc}.tar.gz
-%endif
-Source6:	gromacs-README.fedora
+Source3:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# fix building documentation
-Patch3:		gromacs-sphinx-no-man.patch
-# add support for lmfit-7.0
+# add support for lmfit-7.0, can be dropped in gromacs-2019
 # https://redmine.gromacs.org/issues/2533
-Patch4:		facb927.diff
+Patch1:		facb927.diff
 BuildRequires:	gcc-c++
 BuildRequires:  cmake3 >= 3.4.3
 BuildRequires:	openblas-devel
@@ -247,23 +230,16 @@ This package single and double precision binaries and libraries.
 
 
 %prep
-%if %{git}
-%setup -q -n gromacs-%{commit}
-%patch3 -p1 -b .sphinx-no-man
-%else
 %setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
-%patch4 -p1
+%patch0 -p1
+%patch1 -p1
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
-%endif
-%patch0 -p1 -b .dssp
 # Delete bundled stuff so that it doesn't get used accidentally
 # Don't remove tinyxml2 as gromacs needs an old version to build
 # test, see: https://redmine.gromacs.org/issues/2389
 rm -r src/external/{fftpack,tng_io,lmfit}
 
 %build
-export LDFLAGS="-L%{_libdir}/atlas"
-
 # Default options, used for all compilations
 %global defopts \\\
  -DBUILD_TESTING:BOOL=ON \\\
@@ -328,7 +304,7 @@ mkdir -p %{buildroot}%{_docdir}/gromacs
 install -pm 644 AUTHORS COPYING README %{buildroot}%{_docdir}/gromacs
 # Install manual & packager's note
 install -cpm 644 serial/docs/manual/gromacs.pdf %{buildroot}%{_docdir}/gromacs/manual.pdf
-install -cpm 644 %{SOURCE6} %{buildroot}%{_docdir}/gromacs/README.fedora
+install -cpm 644 %{SOURCE3} %{buildroot}%{_docdir}/gromacs/README.fedora
 
 pushd %{buildroot}
 # rm GMXRC, not needed when installed in /usr
