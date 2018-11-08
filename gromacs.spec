@@ -64,9 +64,6 @@ Source6:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
-# bug#1558206
-Patch2:		gromacs-issue-2366.patch
 # fix building documentation
 Patch3:		gromacs-sphinx-no-man.patch
 # add support for lmfit-7.0
@@ -255,7 +252,6 @@ This package single and double precision binaries and libraries.
 %patch3 -p1 -b .sphinx-no-man
 %else
 %setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
-%patch2 -p1
 %patch4 -p1
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 %endif
@@ -408,6 +404,7 @@ done
 %changelog
 * Thu Nov 8 2018 Christoph Junghans <junghans@votca.org> - 2018.3-2
 - Enable OpenCL for some archs on epel7
+- Drop gromacs-issue-2366.patch (bug #1558206) - seems to be fixed
 
 * Fri Nov 2 2018 Christoph Junghans <junghans@votca.org> - 2018.3-1
 - Version bump to 2018.3
