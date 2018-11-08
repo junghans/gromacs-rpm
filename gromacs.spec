@@ -6,11 +6,8 @@
 
 %global with_opencl 1
 # compilation of OpenCL support is failing only on ppc64le (retested 5 Nov 2018)
-%ifarch ppc64le
-%global with_opencl 0
-%endif
-# don't build opencl on RHEL
-%if 0%{?rhel}
+# compilation of OpenCL support is failing only on ppc64 on rhel (retested 7 Nov 2018)
+%ifarch ppc64le ppc64
 %global with_opencl 0
 %endif
 
@@ -23,8 +20,6 @@
 %global simd SSE2
 %endif
 %endif
-# binutils on RHEL is too old for these ppe64 and arm simd kernels
-%if 0%{?fedora}
 %ifarch ppc64p7
 %global simd IBM_VMX
 %endif
@@ -35,6 +30,8 @@
 %ifarch armv7hnl
 %global simd ARM_NEON
 %endif
+# ARM_NEON_ASIMD doesn't work on rhel, tested 7.Nov.2018
+%if 0%{?fedora}
 %ifarch aarch64
 %global simd ARM_NEON_ASIMD
 %endif
@@ -42,7 +39,7 @@
 
 Name:		gromacs
 Version:	2018.3
-Release:	1%{?_rcname}%{?dist}
+Release:	2%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -88,7 +85,9 @@ BuildRequires:	motif-devel
 %if %{with_opencl}
 BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
+%if 0%{?fedora}
 Recommends:	gromacs-opencl = %{version}-%{release}
+%endif
 %endif
 BuildRequires:	tng-devel
 BuildRequires:	bash-completion
@@ -140,10 +139,12 @@ This package includes architecture independent data and HTML documentation.
 %package opencl
 Summary:	GROMACS OpenCL kernels
 # suggest installing a GPU-based OpenCL implementation
+%if 0%{?fedora}
 Suggests:	beignet
 Suggests:	mesa-libOpenCL
 # or at least a CPU-based one
 Suggests:	pocl
+%endif
 
 %description opencl
 GROMACS is a versatile and extremely well optimized package to perform
@@ -206,7 +207,9 @@ This package contains libraries needed for operation of GROMACS.
 Summary:	GROMACS Open MPI binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
+%if 0%{?fedora}
 Recommends:	gromacs-opencl = %{version}-%{release}
+%endif
 %endif
 Obsoletes:	gromacs-openmpi-libs < 2016-0.1.20160318gitbec9c87
 BuildRequires:	openmpi-devel
@@ -227,7 +230,9 @@ This package single and double precision binaries and libraries.
 Summary:	GROMACS MPICH binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
+%if 0%{?fedora}
 Recommends:	gromacs-opencl = %{version}-%{release}
+%endif
 %endif
 Obsoletes:	gromacs-mpich-libs < 2016-0.1.20160318gitbec9c87
 BuildRequires:	mpich-devel
@@ -401,6 +406,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Thu Nov 8 2018 Christoph Junghans <junghans@votca.org> - 2018.3-2
+- Enable OpenCL for some archs on epel7
+
 * Fri Nov 2 2018 Christoph Junghans <junghans@votca.org> - 2018.3-1
 - Version bump to 2018.3
 - Major spec files clean up
