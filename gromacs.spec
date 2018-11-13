@@ -35,8 +35,8 @@
 %endif
 
 Name:		gromacs
-Version:	2018.3
-Release:	2%{?_rcname}%{?dist}
+Version:	2018.4
+Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -378,6 +378,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Mon Nov 12 2018 Christoph Junghans <junghans@votca.org> - 2018.4-1
+- Version bump to 2018.4
+
 * Thu Nov 8 2018 Christoph Junghans <junghans@votca.org> - 2018.3-2
 - Enable OpenCL for some archs on epel7
 - Drop gromacs-issue-2366.patch (bug #1558206) - seems to be fixed
