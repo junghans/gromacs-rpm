@@ -52,6 +52,9 @@ Patch0:		gromacs-dssp-path.patch
 # add support for lmfit-7.0, can be dropped in gromacs-2019
 # https://redmine.gromacs.org/issues/2533
 Patch1:		facb927.diff
+# enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
+# bug#1558206
+Patch2:		gromacs-issue-2366.patch
 BuildRequires:	gcc-c++
 BuildRequires:  cmake3 >= 3.4.3
 BuildRequires:	openblas-devel
@@ -233,6 +236,9 @@ This package single and double precision binaries and libraries.
 %setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
 %patch0 -p1
 %patch1 -p1
+%if 0%{?fedora} <= 29
+%patch2 -p1
+%endif
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # Delete bundled stuff so that it doesn't get used accidentally
 # Don't remove tinyxml2 as gromacs needs an old version to build
@@ -380,6 +386,7 @@ done
 %changelog
 * Mon Nov 12 2018 Christoph Junghans <junghans@votca.org> - 2018.4-1
 - Version bump to 2018.4
+- Re-added gromacs-issue-2366.patch for f28 and lower
 
 * Thu Nov 8 2018 Christoph Junghans <junghans@votca.org> - 2018.3-2
 - Enable OpenCL for some archs on epel7
