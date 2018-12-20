@@ -2,9 +2,9 @@
 #global _rc -%%_rcname
 
 %global with_opencl 1
-# compilation of OpenCL support is failing only on ppc64le (retested 5 Nov 2018)
-# compilation of OpenCL support is failing only on ppc64 on rhel (retested 7 Nov 2018)
-%ifarch ppc64le ppc64
+# compilation of OpenCL support is failing only on ppc64le (retested 15 Feb 2019)
+# only 64-bit archs: https://redmine.gromacs.org/issues/2821
+%ifarch i686 %arm ppc64le
 %global with_opencl 0
 %endif
 
@@ -20,10 +20,9 @@
 %ifarch ppc64p7
 %global simd IBM_VMX
 %endif
-# https://redmine.gromacs.org/issues/2421 , tested 7.Nov.2018
-#ifarch ppc64le
-#global simd IBM_VSX
-#endif
+%ifarch ppc64le
+%global simd IBM_VSX
+%endif
 %ifarch armv7hnl
 %global simd ARM_NEON
 %endif
@@ -35,8 +34,8 @@
 %endif
 
 Name:		gromacs
-Version:	2018.5
-Release:	2%{?_rcname}%{?dist}
+Version:	2019.1
+Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -49,12 +48,9 @@ Source3:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# add support for lmfit-7.0, can be dropped in gromacs-2019
-# https://redmine.gromacs.org/issues/2533
-Patch1:		facb927.diff
 # enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
 # bug#1558206
-Patch2:		gromacs-issue-2366.patch
+Patch1:		gromacs-issue-2366.patch
 BuildRequires:	gcc-c++
 BuildRequires:  cmake3 >= 3.4.3
 BuildRequires:	openblas-devel
@@ -64,7 +60,6 @@ BuildRequires:	hwloc
 BuildRequires:	hwloc-devel
 BuildRequires:	libX11-devel
 BuildRequires:	lmfit-devel >= 6.0
-BuildRequires:	motif-devel
 %if %{with_opencl}
 BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
@@ -236,9 +231,6 @@ This package single and double precision binaries and libraries.
 %setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
 %patch0 -p1
 %patch1 -p1
-%if 0%{?fedora} <= 29
-%patch2 -p1
-%endif
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # Delete bundled stuff so that it doesn't get used accidentally
 # Don't remove tinyxml2 as gromacs needs an old version to build
@@ -276,20 +268,10 @@ for p in '' _d ; do
     test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
     mkdir -p ${mpi:-serial}${p}
     pushd ${mpi:-serial}${p}
-# regression test broken on ppc64le, https://redmine.gromacs.org/issues/2734, tested 7.Nov.2018
-# and on i686 and ppc64 with gcc-8.0 (so f28, f27), https://redmine.gromacs.org/issues/2584, tested 7.Nov.2018
     test -z "${mpi}" && cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
     %{cmake3} %{defopts} \
-      $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN}) \
-%if 0%{?fedora} >= 29
-%ifnarch ppc64le
+      $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo -DGMX_X11=ON) \
       $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
-%endif
-%else
-%ifnarch ppc64le ppc64 i686
-      $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
-%endif
-%endif
       $(test -n "$p" && echo %{double} || echo %{?single}) \
       ..
     %make_build
@@ -336,8 +318,8 @@ rm ./%{_bindir}/gmx-completion.bash ./%{_libdir}/*mpi*/bin/gmx-completion-*mpi*.
 . /etc/profile.d/modules.sh
 for p in '' _d ; do
   for mpi in '' mpich openmpi ; do
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1512229 (tested 6. Nov 2018)
-%ifarch i686 armv7hl
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1512229 (retested 16. Feb 2018)
+%ifarch s390x armv7hl
     test "${mpi}"  = "openmpi" && continue
 %endif
     test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
@@ -386,6 +368,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Sat Feb 16 2019 Christoph Junghans <junghans@votca.org> - 2019.1-1
+- Version bump to 2019.1 (bug #1677678)
+
 * Thu Feb 14 2019 Orion Poplawski <orion@nwra.com> - 2018.5-2
 - Rebuild for openmpi 3.1.3
 
