@@ -36,7 +36,7 @@
 
 Name:		gromacs
 Version:	2018.4
-Release:	1%{?_rcname}%{?dist}
+Release:	1%{?_rcname}%{?dist}.1
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -384,6 +384,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Feb 01 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2018.4-1.1
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
+
 * Mon Nov 12 2018 Christoph Junghans <junghans@votca.org> - 2018.4-1
 - Version bump to 2018.4
 - Re-added gromacs-issue-2366.patch for f28 and lower
