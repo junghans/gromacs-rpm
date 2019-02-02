@@ -145,15 +145,6 @@ diff --git a/cmake/gmxManageLmfit.cmake b/cmake/gmxManageLmfit.cmake
 index 182928f..5953a19 100644
 --- a/cmake/gmxManageLmfit.cmake
 +++ b/cmake/gmxManageLmfit.cmake
-@@ -1,7 +1,7 @@
- #
- # This file is part of the GROMACS molecular simulation package.
- #
--# Copyright (c) 2016, by the GROMACS development team, led by
-+# Copyright (c) 2016,2018, by the GROMACS development team, led by
- # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- # and including many others, as listed in the AUTHORS file in the
- # top-level source directory and at http://www.gromacs.org.
 @@ -32,21 +32,16 @@
  # To help us fund GROMACS development, we humbly ask that you cite
  # the research papers on the package. Check out http://www.gromacs.org.
@@ -171,9 +162,9 @@ index 182928f..5953a19 100644
 -macro(manage_lmfit)
 -    if(GMX_EXTERNAL_LMFIT)
 -        # Find an external lmfit library.
--        find_package(Lmfit ${GMX_LMFIT_MINIMUM_REQUIRED_VERSION})
--        if(NOT LMFIT_FOUND)
--            message(FATAL_ERROR "External lmfit could not be found, please adjust your pkg-config path to include the lmfit.pc file")
+-        find_package(Lmfit ${GMX_LMFIT_REQUIRED_VERSION})
+-        if(NOT LMFIT_FOUND OR LMFIT_VERSION VERSION_LESS GMX_LMFIT_REQUIRED_VERSION)
+-            message(FATAL_ERROR "External lmfit >= ${GMX_LMFIT_REQUIRED_VERSION} could not be found, please adjust your pkg-config path to include the lmfit.pc file")
 -        endif()
 -    endif()
 -endmacro()

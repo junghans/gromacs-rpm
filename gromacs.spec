@@ -35,8 +35,8 @@
 %endif
 
 Name:		gromacs
-Version:	2018.4
-Release:	1%{?_rcname}%{?dist}.1
+Version:	2018.5
+Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -245,6 +245,8 @@ install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # test, see: https://redmine.gromacs.org/issues/2389
 rm -r src/external/{fftpack,tng_io,lmfit}
 
+sed -i 's/set(_timeout [0-9]*)/set(_timeout 300)/' src/testutils/TestMacros.cmake
+
 %build
 # Default options, used for all compilations
 %global defopts \\\
@@ -384,6 +386,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Feb 01 2019 Christoph Junghans <junghans@votca.org> - 2018.5-1
+- Version bump to 2018.5
+
 * Fri Feb 01 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2018.4-1.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
 
