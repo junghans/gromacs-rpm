@@ -36,7 +36,7 @@
 
 Name:		gromacs
 Version:	2018.5
-Release:	1%{?_rcname}%{?dist}
+Release:	2%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -386,6 +386,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Thu Feb 14 2019 Orion Poplawski <orion@nwra.com> - 2018.5-2
+- Rebuild for openmpi 3.1.3
+
 * Fri Feb 01 2019 Christoph Junghans <junghans@votca.org> - 2018.5-1
 - Version bump to 2018.5
 
