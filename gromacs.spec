@@ -34,7 +34,7 @@
 %endif
 
 Name:		gromacs
-Version:	2019.1
+Version:	2019.2
 Release:	1%{?_rcname}%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
@@ -271,7 +271,9 @@ for p in '' _d ; do
     test -z "${mpi}" && cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
     %{cmake3} %{defopts} \
       $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo -DGMX_X11=ON) \
+%ifnarch i686 %arm # regressiontest are not support on 32-bit archs: http://redmine.gromacs.org/issues/2584#note-35
       $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
+%endif
       $(test -n "$p" && echo %{double} || echo %{?single}) \
       ..
     %make_build
@@ -368,6 +370,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Tue Apr 16 2019 Christoph Junghans <junghans@votca.org> - 2019.2-1
+- Version bump to 2019.2 (bug #1677678)
+
 * Sat Feb 16 2019 Christoph Junghans <junghans@votca.org> - 2019.1-1
 - Version bump to 2019.1 (bug #1677678)
 
