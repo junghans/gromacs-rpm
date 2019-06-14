@@ -237,7 +237,7 @@ install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # test, see: https://redmine.gromacs.org/issues/2389
 rm -r src/external/{fftpack,tng_io,lmfit}
 
-sed -i 's/set(_timeout [0-9]*)/set(_timeout 600)/' src/testutils/TestMacros.cmake
+sed -i 's/set(_timeout [0-9]*)/set(_timeout 900)/' src/testutils/TestMacros.cmake
 
 %build
 # Default options, used for all compilations
