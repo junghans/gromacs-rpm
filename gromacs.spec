@@ -35,7 +35,7 @@
 
 Name:		gromacs
 Version:	2019.3
-Release:	1%{?_rcname}%{?dist}
+Release:	1%{?_rcname}%{?dist}.1
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -370,6 +370,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Thu Jul 25 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2019.3-1.1
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
+
 * Fri Jun 14 2019 Christoph Junghans <junghans@votca.org> - 2019.3-1
 - Version bump to 2019.3 (bug #1720697)
 
