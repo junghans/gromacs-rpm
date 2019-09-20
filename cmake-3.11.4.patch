@@ -1,0 +1,37 @@
+From f97aee90fb7a53955f1056f8ed74fce1e6fee12f Mon Sep 17 00:00:00 2001
+From: Christoph Junghans <junghans@votca.org>
+Date: Thu, 19 Sep 2019 16:54:41 -0600
+Subject: [PATCH] workaround for bug #1749463, cmake bug #18349
+
+Change-Id: I14c1c0a4f33f26b128d55baa1b0455f8a463a999
+---
+ cmake/gmxManageMPI.cmake | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/cmake/gmxManageMPI.cmake b/cmake/gmxManageMPI.cmake
+index 02db55732..daf06f12f 100644
+--- a/cmake/gmxManageMPI.cmake
++++ b/cmake/gmxManageMPI.cmake
+@@ -50,8 +50,17 @@ if(GMX_MPI)
+   if(NOT MPI_FOUND)
+       find_package(MPI)
+       if(MPI_C_FOUND)
+-        set(MPI_COMPILE_FLAGS ${MPI_C_COMPILE_FLAGS})
+-        set(MPI_LINKER_FLAGS ${MPI_C_LINK_FLAGS})
++	# workaround for bug #1749463, cmake bug #18349
++	# set(MPI_COMPILE_FLAGS ${MPI_C_COMPILE_FLAGS})
++	# set(MPI_LINKER_FLAGS ${MPI_C_LINK_FLAGS})
++	set(MPI_COMPILE_FLAGS)
++	foreach(_MPI_FLAG ${MPI_C_COMPILE_FLAGS})
++          set(MPI_COMPILE_FLAGS "${MPI_COMPILE_FLAGS} ${_MPI_FLAG}")
++        endforeach()
++	set(MPI_LINKER_FLAGS)
++	foreach(_MPI_FLAG ${MPI_C_LINK_FLAGS})
++          set(MPI_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${_MPI_FLAG}")
++        endforeach()
+         include_directories(SYSTEM ${MPI_C_INCLUDE_PATH})
+         list(APPEND GMX_COMMON_LIBRARIES ${MPI_C_LIBRARIES})
+       endif()
+-- 
+2.21.0
+
