@@ -48,8 +48,6 @@ Patch0:		gromacs-dssp-path.patch
 # enable some test on aarch64 - https://redmine.gromacs.org/issues/2366
 # bug#1558206
 Patch1:		gromacs-issue-2366.patch
-# workaround for bug #1749463, cmake bug #18349
-Patch2:         cmake-3.11.4.patch
 BuildRequires:	gcc-c++
 BuildRequires:  cmake3 >= 3.4.3
 BuildRequires:	openblas-devel
@@ -230,9 +228,6 @@ This package single and double precision binaries and libraries.
 %setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
 %patch0 -p1
 %patch1 -p1
-%if 0%{?rhel} == 8
-%patch2 -p1
-%endif
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # Delete bundled stuff so that it doesn't get used accidentally
 # Don't remove tinyxml2 as gromacs needs an old version to build
@@ -374,6 +369,7 @@ done
 %changelog
 * Wed Oct 02 2019 Christoph Junghans <junghans@votca.org> - 2019.4-1
 - Version bump to 2019.4 (bug #1757694)
+- drop cmake-3.11.4.patch to merged upstream
 
 * Sun Aug 25 2019 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 2019.3-1.2
 - Rebuilt for hwloc-2.0
