@@ -34,8 +34,8 @@
 %endif
 
 Name:		gromacs
-Version:	2019.3
-Release:	1%{?_rcname}%{?dist}.2
+Version:	2019.4
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -370,6 +370,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Wed Oct 02 2019 Christoph Junghans <junghans@votca.org> - 2019.4-1
+- Version bump to 2019.4 (bug #1757694)
+
 * Sun Aug 25 2019 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 2019.3-1.2
 - Rebuilt for hwloc-2.0
 
