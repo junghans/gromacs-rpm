@@ -12,10 +12,8 @@
 %ifarch x86_64
 %global simd SSE2
 %endif
-%if 0%{?fedora} >= 29
 %ifarch i686
 %global simd SSE2
-%endif
 %endif
 %ifarch ppc64p7
 %global simd IBM_VMX
@@ -60,9 +58,7 @@ BuildRequires:	lmfit-devel >= 6.0
 %if %{with_opencl}
 BuildRequires:	ocl-icd-devel
 BuildRequires:	opencl-headers
-%if 0%{?fedora}
 Recommends:	gromacs-opencl = %{version}-%{release}
-%endif
 %endif
 BuildRequires:	tng-devel
 BuildRequires:	bash-completion
@@ -114,12 +110,10 @@ This package includes architecture independent data and HTML documentation.
 %package opencl
 Summary:	GROMACS OpenCL kernels
 # suggest installing a GPU-based OpenCL implementation
-%if 0%{?fedora}
 Suggests:	beignet
 Suggests:	mesa-libOpenCL
 # or at least a CPU-based one
 Suggests:	pocl
-%endif
 
 %description opencl
 GROMACS is a versatile and extremely well optimized package to perform
@@ -182,9 +176,7 @@ This package contains libraries needed for operation of GROMACS.
 Summary:	GROMACS Open MPI binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
-%if 0%{?fedora}
 Recommends:	gromacs-opencl = %{version}-%{release}
-%endif
 %endif
 Obsoletes:	gromacs-openmpi-libs < 2016-0.1.20160318gitbec9c87
 BuildRequires:	openmpi-devel
@@ -205,9 +197,7 @@ This package single and double precision binaries and libraries.
 Summary:	GROMACS MPICH binaries and libraries
 Requires:	gromacs-common = %{version}-%{release}
 %if %{with_opencl}
-%if 0%{?fedora}
 Recommends:	gromacs-opencl = %{version}-%{release}
-%endif
 %endif
 Obsoletes:	gromacs-mpich-libs < 2016-0.1.20160318gitbec9c87
 BuildRequires:	mpich-devel
