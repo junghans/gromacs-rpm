@@ -30,7 +30,7 @@
 
 Name:		gromacs
 Version:	2019.5
-Release:	1%{?dist}
+Release:	1%{?dist}.1
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -357,6 +357,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Thu Jan 09 2020 Christoph Junghans <junghans@votca.org> - 2019.5-1.1
+- Rebuild for koji
+
 * Mon Dec 23 2019 Christoph Junghans <junghans@votca.org> - 2019.5-1
 - Version bump to 2019.5 (bug #1786201)
 
