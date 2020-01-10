@@ -264,8 +264,7 @@ for p in '' _d ; do
 %endif
       $(test -n "$p" && echo %{double} || echo %{?single}) \
       ..
-    test -n "${mpi}" && xLD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} || xLD_LIBRARY_PATH=%{buildroot}%{_libdir}
-    LD_LIBRARY_PATH="${xLD_LIBRARY_PATH}" %make_build
+    LD_LIBRARY_PATH="${PWD}/lib" %make_build
     popd
     test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
   done
