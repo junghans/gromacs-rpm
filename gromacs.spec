@@ -257,7 +257,7 @@ for p in '' _d ; do
     pushd ${mpi:-serial}${p}
     test -z "${mpi}" && cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
     %{cmake3} %{defopts} \
-      $(test -n "${mpi}" && echo -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo -DGMX_X11=ON) \
+      $(test -n "${mpi}" && echo %mpi -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo -DGMX_X11=ON) \
       $(test "${mpi}" = openmpi && echo -DMPIEXEC_PREFLAGS="--oversubscribe") \
 %ifnarch i686 %arm ppc64le # regressiontest are not support on 32-bit archs: http://redmine.gromacs.org/issues/2584#note-35, ppc64le: https://redmine.gromacs.org/issues/2734
       $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
