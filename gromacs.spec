@@ -45,6 +45,8 @@ Source3:	gromacs-README.fedora
 Patch0:		gromacs-dssp-path.patch
 # https://gerrit.gromacs.org/c/gromacs/+/15277
 Patch1:         mpiflags.patch
+# https://redmine.gromacs.org/issues/3294
+Patch2:         2ea07ac.diff
 BuildRequires:	gcc-c++
 BuildRequires:  cmake3 >= 3.4.3
 BuildRequires:	openblas-devel
@@ -217,6 +219,7 @@ This package single and double precision binaries and libraries.
 %setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
 %patch0 -p1
 %patch1 -p1
+%patch2 -p1
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # Delete bundled stuff so that it doesn't get used accidentally
 # Don't remove tinyxml2 as gromacs needs an old version to build
