@@ -30,8 +30,8 @@
 %endif
 
 Name:		gromacs
-Version:	2019.5
-Release:	3%{?dist}
+Version:	2019.6
+Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
 URL:		http://www.gromacs.org
@@ -358,6 +358,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Feb 28 2020 Christoph Junghans <junghans@votca.org> - 2019.6-1
+- Version bump to 2019.6
+
 * Sat Feb 15 2020 Christoph Junghans <junghans@votca.org> - 2019.5-3
 - fix build with gcc10
 
