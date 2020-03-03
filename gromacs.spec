@@ -18,9 +18,10 @@
 %ifarch ppc64p7
 %global simd IBM_VMX
 %endif
-%ifarch ppc64le
-%global simd IBM_VSX
-%endif
+# https://bugzilla.redhat.com/show_bug.cgi?id=1799473#c4
+#ifarch ppc64le
+#global simd IBM_VSX
+#endif
 %ifarch armv7hnl
 %global simd ARM_NEON
 %endif
@@ -361,6 +362,15 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Fri Feb 28 2020 Christoph Junghans <junghans@votca.org> - 2019.6-1
+- Version bump to 2019.6
+
+* Sat Feb 15 2020 Christoph Junghans <junghans@votca.org> - 2019.5-3
+- fix build with gcc10
+
+* Wed Jan 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 2019.5-2.1
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
+
 * Thu Jan 09 2020 Christoph Junghans <junghans@votca.org> - 2020-1
 - Version bump to v2020 (bug #1787785)
 
