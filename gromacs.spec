@@ -30,7 +30,7 @@
 %endif
 
 Name:		gromacs
-Version:	2020
+Version:	2020.1
 Release:	1%{?dist}
 Summary:	Fast, Free and Flexible Molecular Dynamics
 License:	GPLv2+
@@ -44,10 +44,6 @@ Source3:	gromacs-README.fedora
 # fix path to packaged dssp
 # https://bugzilla.redhat.com/show_bug.cgi?id=1203754
 Patch0:		gromacs-dssp-path.patch
-# https://gerrit.gromacs.org/c/gromacs/+/15277
-Patch1:         mpiflags.patch
-# https://redmine.gromacs.org/issues/3294
-Patch2:         2ea07ac.diff
 BuildRequires:	gcc-c++
 BuildRequires:  cmake3 >= 3.4.3
 BuildRequires:	openblas-devel
@@ -219,8 +215,6 @@ This package single and double precision binaries and libraries.
 %prep
 %setup -q %{?SOURCE2:-a 2} -n gromacs-%{version}%{?_rc}
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
 install -Dpm644 %{SOURCE1} ./serial/docs/manual/gromacs.pdf
 # Delete bundled stuff so that it doesn't get used accidentally
 # Don't remove tinyxml2 as gromacs needs an old version to build
@@ -243,7 +237,6 @@ sed -i 's/set(_timeout [0-9]*)/set(_timeout 900)/' src/testutils/TestMacros.cmak
  -DGMX_EXTERNAL_TINYXML2:BOOL=OFF \\\
  -DGMX_LAPACK_USER=openblas \\\
  -DGMX_USE_RDTSCP=OFF \\\
- -DGMX_BUILD_HELP=ON \\\
  -DGMX_SIMD=%{simd} \\\
 
 %if %{with_opencl}
@@ -261,14 +254,14 @@ for p in '' _d ; do
     pushd ${mpi:-serial}${p}
     test -z "${mpi}" && cp -al ../regressiontests* tests/ # use with -DREGRESSIONTEST_PATH=${PWD}/tests below
     %{cmake3} %{defopts} \
-      $(test -n "${mpi}" && echo %mpi -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo -DGMX_X11=ON) \
+      $(test -n "${mpi}" && echo %{mpi} -DGMX_BINARY_SUFFIX=${MPI_SUFFIX}${p} -DGMX_LIBS_SUFFIX=${MPI_SUFFIX}${p} -DCMAKE_INSTALL_BINDIR=${MPI_BIN} || echo -DGMX_X11=ON) \
       $(test "${mpi}" = openmpi && echo -DMPIEXEC_PREFLAGS="--oversubscribe") \
 %ifnarch i686 %arm ppc64le # regressiontest are not support on 32-bit archs: http://redmine.gromacs.org/issues/2584#note-35, ppc64le: https://redmine.gromacs.org/issues/2734
       $(test -z "${mpi}" && echo "-DREGRESSIONTEST_PATH=${PWD}/tests") \
 %endif
       $(test -n "$p" && echo %{double} || echo %{?single}) \
       ..
-    LD_LIBRARY_PATH="${PWD}/lib" %make_build
+    %make_build
     popd
     test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
   done
@@ -318,7 +311,7 @@ for p in '' _d ; do
 %endif
     test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
     test -n "${mpi}" && xLD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} || xLD_LIBRARY_PATH=%{buildroot}%{_libdir}
-    LD_LIBRARY_PATH="${xLD_LIBRARY_PATH}:$PWD/${mpi:-serial}${p}/lib" make -C ${mpi:-serial}${p} VERBOSE=1 %{?_smp_mflags} check
+    LD_LIBRARY_PATH="${xLD_LIBRARY_PATH}" make -C ${mpi:-serial}${p} VERBOSE=1 %{?_smp_mflags} check
     test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
   done
 done
@@ -362,6 +355,9 @@ done
 %{_libdir}/mpich/bin/mdrun_mpich*
 
 %changelog
+* Tue Mar 03 2020 Christoph Junghans <junghans@votca.org> - 2020.1-1
+- Version bump to v2020.1
+
 * Fri Feb 28 2020 Christoph Junghans <junghans@votca.org> - 2019.6-1
 - Version bump to 2019.6
 
