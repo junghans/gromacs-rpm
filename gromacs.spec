@@ -311,7 +311,7 @@ for p in '' _d ; do
 %endif
     test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
     test -n "${mpi}" && xLD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} || xLD_LIBRARY_PATH=%{buildroot}%{_libdir}
-    LD_LIBRARY_PATH="${xLD_LIBRARY_PATH}" make -C ${mpi:-serial}${p} VERBOSE=1 %{?_smp_mflags} check
+    LD_LIBRARY_PATH="${xLD_LIBRARY_PATH}:$PWD/${mpi:-serial}${p}/lib" make -C ${mpi:-serial}${p} VERBOSE=1 %{?_smp_mflags} check
     test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
   done
 done
