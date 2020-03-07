@@ -310,8 +310,7 @@ for p in '' _d ; do
     test "${mpi}"  = "openmpi" && continue
 %endif
     test -n "${mpi}" && module load mpi/${mpi}-%{_arch}
-    test -n "${mpi}" && xLD_LIBRARY_PATH=$LD_LIBRARY_PATH:%{buildroot}${MPI_LIB} || xLD_LIBRARY_PATH=%{buildroot}%{_libdir}
-    LD_LIBRARY_PATH="${xLD_LIBRARY_PATH}:$PWD/${mpi:-serial}${p}/lib" make -C ${mpi:-serial}${p} VERBOSE=1 %{?_smp_mflags} check
+    LD_LIBRARY_PATH="$PWD/${mpi:-serial}${p}/lib" make -C ${mpi:-serial}${p} VERBOSE=1 %{?_smp_mflags} check
     test -n "${mpi}" && module unload mpi/${mpi}-%{_arch}
   done
 done
@@ -340,13 +339,17 @@ done
 
 %files libs
 %{_libdir}/libgromacs*.so.*
+%{_libdir}/libgmxapi*.so.*
 
 %files devel
 %{_includedir}/%{name}
+%{_includedir}/gmxapi
 %{_libdir}/libgromacs*.so
+%{_libdir}/libgmxapi*.so
 %{_libdir}/pkgconfig/libgromacs*.pc
 %{_datadir}/%{name}/template
 %{_datadir}/cmake/gromacs*
+%{_datadir}/cmake/gmxapi
 
 %files openmpi
 %{_libdir}/openmpi/bin/mdrun_openmpi*
